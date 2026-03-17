@@ -8,7 +8,7 @@
 
 
   back in 1991, Linus torvalds This guy : <img width="192" height="191" alt="image" src="https://github.com/user-attachments/assets/5f0d7b7b-64df-43ff-81a1-3d946586fc1a" /> chill guy right? he is, he just need an internet connect, and a table & chair 
-  and boom.
+  and boom Git & linux in front of you
   
 
 
