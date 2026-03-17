@@ -7,7 +7,9 @@
   Let's discuss about the Architecture of linux and understand how linux works,
 
 
-  back in 1991, Linus torvalds This guy : <img width="192" height="191" alt="image" src="https://github.com/user-attachments/assets/5f0d7b7b-64df-43ff-81a1-3d946586fc1a" /> chill guy right? he is
+  back in 1991, Linus torvalds This guy : <img width="192" height="191" alt="image" src="https://github.com/user-attachments/assets/5f0d7b7b-64df-43ff-81a1-3d946586fc1a" /> chill guy right? he is, he just need an internet connect, and a table & chair 
+  and boom.
+  
 
 
   he created a system an OS called as " Linux " and made it open-source (the code will be accessable by anyone), but why?
