@@ -10,23 +10,29 @@ Terminal> echo "Practicing file commands" >> notes.txt -> appended second line
 
 Terminal> echo "DevOps journey Day 06" | tee -a notes.txt -> appended and displayed  ( -a : appends, tee is used to write as well as print ).
 
+
 OUTPUT:
 
 Learning Linux is fun
 Practicing file commands
 DevOps journey Day 06
 
+
 Terminal> head -n 2 notes.txt  -> prints stating 2 lines
+
 
 OUTPUT:
 
-Learning Linux is fun
+Learning Linux
+
 Practicing file commands
 
 
 Terminal> tail -n 2 notes.txt prints last 2 lines
 
+
 OUTPUT:
 
 Practicing file commands
+
 DevOps journey Day 06
