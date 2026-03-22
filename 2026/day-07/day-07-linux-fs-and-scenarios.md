@@ -126,3 +126,83 @@ Output: list all the files including hidden files as well
 
 <h3>(2)Scenario-Based Practice</h3>
 
+<h4>Scenario 1: Service Not Starting</h4>
+
+  A web application service called 'myapp' failed to start after a server reboot.
+  What commands would you run to diagnose the issue?
+  Write at least 4 commands in order.
+
+My answer:
+
+  *) first check whether the service call myapp is running or not by executing:
+     Terminal> systemctl status myapp
+     
+  *) second check the logs by exeuting:
+     Terminal> journalctl -u myapp -n 50
+
+  *) since it is not starting after rebooting , then it could be that the service is not enabled (starting automatically on boot), to 
+     check whether the service is enabled or not execute:
+     Terminal> systemctl is-enabled myapp
+
+  *) If the service is not enabled then enable it by:
+     Terminal> systemctl enable myapp
+
+  *) finally restart the serivce 
+     Terminal> systemctl restart myapp.
+
+<h4>Scenario 2: High CPU Usage</h4>
+
+  Your manager reports that the application server is slow.
+  You SSH into the server. What commands would you run to identify
+  which process is using high CPU?
+
+My answer:
+
+  *) Since I have to identify which process is using the high CPU i will execute:
+     Terminal> top
+     This will show all the processes live.
+
+  *) if the output from top seems to be like very messy and difficult to find, I will execute this command:
+     Terminal> ps aux --sort=-%CPU | head -10
+     THis command will show the top 10 process which are consuming most of the CPU.
+
+  *) I will not the PID for that process and check why its consuming this much CPU, and I will KILL/STOP the process by:
+     Terminal> kill <PID>
+
+<h4>Scenario 3: Finding Service Logs</h4>
+
+  A developer asks: "Where are the logs for the 'docker' service?"
+  The service is managed by systemd.
+  What commands would you use?
+
+My answer:
+
+  *) First I will check the status of the docker service:
+     Terminal> systemctl status docker
+
+  *) Here is the main part of checking the logs , thats what developer ask:
+     Terminal> journalctl -u docker -n 50
+
+  *) If the developer team wants to watch the logs continuously then:
+     Terminal> journalctl -u docker -f
+     This command shows the live logs.
+
+
+<h4>Scenario 4: File Permissions Issue</h4>
+
+  A script at /home/user/backup.sh is not executing.
+  When you run it: ./backup.sh
+  You get: "Permission denied"
+
+My answer:
+
+  *) If I am getting the permission denied issue then it's most likely a permission issue , the current user (me) trying to execute the 
+     script but there is no execute permission granted for me , I will change the permission and grant the execute permission by:
+     Terminal> chmod +x backup.sh
+     this will give me execute permission
+
+  *) After that I will check the permission by:
+     Terminal> ls -l /home/user/backup.sh
+     Before "-rw-r--r--" after "-rwxr-xr-x" notice there is an "x" which shows that the execute permission has been granted.
+
+      
