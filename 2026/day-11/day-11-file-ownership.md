@@ -10,7 +10,7 @@ Task:
 
 Challenge Tasks
 
-Task 1: Understanding Ownership
+<h2>Task 1: Understanding Ownership</h2>
   
   Run ls -l in your home directory
   Identify the owner and group columns
@@ -27,7 +27,7 @@ Here Ubuntu is the User/Owner and another ubuntu right after the first ubuntu is
 Owner --> who controls file
 Groups --> shared access for pool of users.
 
-Task 2: Basic chown Operations 
+<h2>Task 2: Basic chown Operations</h2>
 
   Create file devops-file.txt
   Check current owner: ls -l devops-file.txt
@@ -39,7 +39,7 @@ My answer:
 
 <img width="1038" height="1408" alt="image" src="https://github.com/user-attachments/assets/c41f91a2-6f1f-4087-a937-3c0b80c4c6c4" />
 
-Task 3: Basic chgrp Operations
+<h2>Task 3: Basic chgrp Operations</h2>
   
   Create file team-notes.txt
   Check current group: ls -l team-notes.txt
@@ -51,7 +51,7 @@ My answer:
 
  <img width="894" height="194" alt="image" src="https://github.com/user-attachments/assets/2fab3bc9-f822-4cac-b967-0a70bf4a37ca" />
 
-Task 4: Combined Owner & Group Change
+<h2>Task 4: Combined Owner & Group Change</h2>
   
   Using chown you can change both owner and group together:
   
@@ -64,7 +64,7 @@ My answer:
 
 <img width="1108" height="826" alt="image" src="https://github.com/user-attachments/assets/d0b77f14-2a7a-4283-8987-1e0f1774a2de" />
 
-Task 5: Recursive Ownership (20 minutes)
+<h2>Task 5: Recursive Ownership</h2>
   
   Create directory structure:
   
@@ -85,7 +85,7 @@ My answer:
 
 <img width="1140" height="1454" alt="image" src="https://github.com/user-attachments/assets/a274d78f-5e57-4fda-8229-8336faa13d3c" />
 
-Task 6: Practice Challenge (20 minutes)
+<h2>Task 6: Practice Challenge</h2>
   
   Create users: tokyo, berlin, nairobi (if not already created)
   
