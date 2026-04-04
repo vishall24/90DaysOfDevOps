@@ -96,43 +96,30 @@ Create `maintenance.sh` that:
 
 My answer:
 
+<img width="1476" height="592" alt="image" src="https://github.com/user-attachments/assets/a0c34b52-40c4-4e11-98bd-0d130a01d454" />
 
-## Hints
-- Compress old files: `find /path -name "*.log" -mtime +7 -exec gzip {} \;`
-- Timestamp: `date +%Y-%m-%d`
-- Tar: `tar -czf backup.tar.gz /source/dir`
-- Cron edit: `crontab -e`
-- Log with timestamp: `echo "$(date): message" >> logfile`
+<img width="1518" height="458" alt="image" src="https://github.com/user-attachments/assets/36e03e81-76e2-4bf1-b290-887c9b3783c3" />
 
----
+## Scripts Created
+    log_rotate.sh  
+    backup.sh  
+    maintenance.sh  
 
-## Documentation
+## Cron Jobs
+       * * * * *  command
+       │ │ │ │ │
+       │ │ │ │ └── Day of week (0-7)
+       │ │ │ └──── Month (1-12)
+       │ │ └────── Day of month (1-31)
+       │ └──────── Hour (0-23)
+       └────────── Minute (0-59)
 
-Create `day-19-project.md` with:
-- Each script's code
-- Sample outputs
-- Cron entries you wrote
-- What you learned (3 key points)
+       Edited cron job by executing:: crontab -e, and edited in vim editor 
 
----
+## What I Learned
+    - Automating real tasks like logs and backups  
+    - Scheduling jobs using cron  
+    - Writing production-like scripts  
 
-## Submission
-1. Add your scripts and `day-19-project.md` to `2026/day-19/`
-2. Commit and push to your fork
 
----
-
-## Reference Video
-
-[![Watch the video](https://img.youtube.com/vi/PZYJ33bMXAw/0.jpg)](https://youtu.be/PZYJ33bMXAw?si=RzEzOSom7-FqnopA)
-
----
-
-## Learn in Public
-
-Share your shell scripting projects on LinkedIn.
-
-`#90DaysOfDevOps` `#DevOpsKaJosh` `#TrainWithShubham`
-
-Happy Learning!
-**TrainWithShubham**
+Ciao Adios
