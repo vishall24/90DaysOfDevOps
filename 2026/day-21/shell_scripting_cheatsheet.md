@@ -67,3 +67,81 @@ Document with examples:
 ---
 
 My answer
+
+1) String comparisons -
+   =  : is equal to?
+   != : is not equal to?
+   -z : is empty?
+   -n : is not empty?
+
+   Example:
+
+    [ "$a" = "$b" ]     # equal  
+    [ "$a" != "$b" ]    # not equal  
+    [ -z "$a" ]         # empty  
+    [ -n "$a" ]         # not empty
+
+2) Integer Comparisons:
+   -eq : equals to
+   -ne : not equal to
+   -lt : less than
+   -gt : greater than
+   -le : less than or equal to
+   -ge : greater than or equal to
+
+   Eg:
+
+    [ $a -eq $b ]   # equal  
+    [ $a -ne $b ]   # not equal  
+    [ $a -lt $b ]   # less than  
+    [ $a -gt $b ]   # greater than
+    [ $a -le $b ]   # greater than
+    [ $a -ge $b ]   # greater than
+
+3) File test Operations:
+   -f : file ( file exists ? eg: if [ -f "$FILENAME"]; then)
+   -d : dir ( directory exists?)
+   -r : file ( is it readable ?)
+   -w : file (is it writable ?)
+   -x : file (is it executable ?)
+   -e : file ( file exists? (( any type of file eg: symlink , directory)) )
+   -s : file (does the file exist and NOT empty ??)
+
+4) if, elif & else:
+   Eg:
+
+   if [ -f text.txt ]; then
+       echo "file exists"
+   elif [ -d text.txt ]; then
+       echo "its a directory"
+   else
+       echo "Not found"
+
+5) &&, ||, !:
+   cmd1 && cmd2 --> return true if both of them are true else false
+   cmd1 || cmd2 --> return true if either of them is true
+   ! cmd1       ---> return true if the cmd1 is not cmd1 ( NOT operator)
+
+6) case and esac :
+   Eg:
+
+   case $VAR in
+     start) echo "started the process"
+     end) echo "ended the process"
+     *) echo "invalid"
+   esac
+
+---
+
+### Task 3: Loops
+Document with examples:
+1. `for` loop — list-based and C-style
+2. `while` loop
+3. `until` loop
+4. Loop control — `break`, `continue`
+5. Looping over files — `for file in *.log`
+6. Looping over command output — `while read line`
+
+---
+
+My answer:
