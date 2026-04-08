@@ -145,3 +145,108 @@ Document with examples:
 ---
 
 My answer:
+
+1) for loop list-based:
+
+   for i in 1 2 3 4 5; do
+       echo $i
+   done
+
+   C-style:
+
+   for ((i=1; i<=5; i++))
+   do
+       echo $i
+   done
+
+2) while loop:
+
+   i=1
+   while [ $i -le 5 ];
+   do
+       echo $i
+       ((i++))
+   done
+
+3) until loop:
+
+   i=1
+   until [ $i -gt 5 ]:
+   do
+       echo $1
+       (( i++ ))
+   done
+
+4) loop control: break ( break will exit the entire loop ), continue ( continue will just skip the current iteration and move to the next iteration)
+
+5) Loop over files:
+
+   for file in *.log
+   do
+       echo "processing files: $file"
+       wc -l "$file"
+   done
+
+6) while read line loop:
+
+   while read line_anything
+   do
+       echo "line : $line_anything"
+   done
+
+   --> this will ask for input and prints the same.
+
+
+---
+
+### Task 4: Functions
+  Document with examples:
+  1. Defining a function — `function_name() { ... }`
+  2. Calling a function
+  3. Passing arguments to functions — `$1`, `$2` inside functions
+  4. Return values — `return` vs `echo`
+  5. Local variables — `local`
+
+---
+
+1) functions:
+   greet(){
+3)    echo "Hello $1"
+    }
+
+2)  greet vishal
+
+4) return 1 --> this will not print anything but returns someting to function, echo "Hello" --> this will print the text passed inside it.
+
+5) myfunc() {
+  local name="Vishal"
+} --> only available in funciton inside function.
+
+---
+
+### Task 5: Text Processing Commands
+  Document the most useful flags/patterns for each:
+  1. `grep` — search patterns, `-i`, `-r`, `-c`, `-n`, `-v`, `-E`
+  2. `awk` — print columns, field separator, patterns, `BEGIN/END`
+  3. `sed` — substitution, delete lines, in-place edit
+  4. `cut` — extract columns by delimiter
+  5. `sort` — alphabetical, numerical, reverse, unique
+  6. `uniq` — deduplicate, count
+  7. `tr` — translate/delete characters
+  8. `wc` — line/word/char count
+  9. `head` / `tail` — first/last N lines, follow mode
+
+---
+
+My answer:
+
+1)  grep "error" file.txt        # search pattern
+    grep -i "error" file.txt     # ignore case ( NAME can be considered as name as well)
+    grep -r "error" /logs        # recursive search
+    grep -c "error" file.txt     # count matches
+    grep -n "error" file.txt     # show line numbers
+    grep -v "error" file.txt     # invert (exclude)
+    grep -E "error|fail" file.txt # multiple patterns (regex)
+
+2) awk '{ print $1 }'file   --> prints 1st column only fro the file "file"
+   
