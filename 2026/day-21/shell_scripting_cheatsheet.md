@@ -249,4 +249,96 @@ My answer:
     grep -E "error|fail" file.txt # multiple patterns (regex)
 
 2) awk '{ print $1 }'file   --> prints 1st column only fro the file "file"
-   
+   awk '{print $1,$3}' file.txt  --> prints 1st and 3rd column
+   awk -F "," '{print $1}' file.csv --> this will print the 1st column but how it will differentiate the content of 1st and                                           rest of the column this can be possible using delimiter but providing delimiter it                                            will seperate.
+   awk '/error/ {print}' file.txt  --> print only pattern match
+   awk 'BEGIN {print "Start"} {print $1} END {print "End"}' file.txt --> this will print start at start and END at the end.
+
+3)  sed 's/error/warning/' file.txt     --> replace first match per line (ex: error with error on to warniing with warning                                               on), this will not edit the file it will just print the modified output.
+    sed 's/error/warning/g' file.txt    --> replace all
+    sed '2d' file.txt                   --> delete line 2
+    sed -i 's/error/warning/g' file.txt --> edit file in-place, different than sed 's/er/war/' file.txt, this will edit the                                               original file
+
+4)  root:x:0:0:root:/root:/bin/bash
+    ubuntu:x:1000:1000:Ubuntu:/home/ubuntu:/bin/bash
+
+    Command:
+    
+    cut -d ":" -f1 file.txt
+
+    Output:
+
+    root
+    ubuntu
+
+5)  sort file.txt        --> alphabetical wise sort
+    sort -n numbers.txt  --> numeric wise sort 1,10,12,23...
+    sort -r file.txt     --> reverse wise sort d,c,b,a
+    sort -u file.txt     --> unique, apple , apple, apple will be shown as one apple.
+
+6)  uniq file.txt        --> remove duplicates
+    uniq -c file.txt     --> count duplicates Ex: 3.apple,2.banana
+    uniq -d file.txt     --> show duplicates only.
+
+7) tr = translate / transform character now::
+
+    echo "abc" | tr 'a' 'x'     --> replace a → x
+    echo "abc" | tr 'a-z' 'A-Z' --> lowercase → uppercase
+    echo "a b c" | tr -d ' '    --> delete spaces
+
+8)  wc file.txt     --> lines, words, chars
+
+    == 3 7 44 file.txt
+
+    Meaning:
+      3 → lines
+      7 → words
+      44 → characters (bytes)
+    
+    wc -l file.txt  --> number of lines
+    wc -w file.txt  --> count of words
+    wc -c file.txt  --> count of characters
+
+9)  head -5 file.txt   --> first 5 lines
+    tail -5 file.txt   --> last 5 lines
+    tail -f file.txt   --> follow mode(live logs)
+
+---
+
+### Task 6: Useful Patterns and One-Liners
+Include at least 5 real-world one-liners you find useful. Examples:
+- Find and delete files older than N days
+- Count lines in all `.log` files
+- Replace a string across multiple files
+- Check if a service is running
+- Monitor disk usage with alerts
+- Parse CSV or JSON from command line
+- Tail a log and filter for errors in real time
+
+---
+
+My answer:
+
+- find . -name "*.log" -mtime +7 -delete
+- wc -l "*.log"
+- sed -i "s/error/warnings/g" *.log
+- systemctl is-active nginx, systemctl status, nginx
+- df -h | awk '$5+0 > 80 {print "High usage on", $6}'
+- cut -d "," -f2 file.csv
+- tail -f app.log | grep -i error
+
+---
+
+### Task 7: Error Handling and Debugging
+Document with examples:
+1. Exit codes — `$?`, `exit 0`, `exit 1`
+2. `set -e` — exit on error
+3. `set -u` — treat unset variables as error
+4. `set -o pipefail` — catch errors in pipes
+5. `set -x` — debug mode (trace execution)
+6. Trap — `trap 'cleanup' EXIT`
+
+---
+
+My answer:
+
