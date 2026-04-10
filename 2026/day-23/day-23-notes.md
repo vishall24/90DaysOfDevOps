@@ -13,19 +13,19 @@ HEAD points to the current branch/commit you are working on.
 Files change to match that branch’s state.
 
 ## 5. origin vs upstream
-origin → your repo  
-upstream → original repo (forked from)
+origin --> your repo  
+upstream --> original repo (forked from)
 
 ## 6. fetch vs pull
-fetch → downloads changes  
-pull → downloads + merges
+fetch --> downloads changes  
+pull --> downloads + merges
 
 ## 7. clone vs fork
-clone → copy repo locally  
-fork → copy repo on GitHub
+clone --> copy repo locally  
+fork --> copy repo on GitHub
 
 ## 8. When to use?
-clone → when you own repo  
-fork → when contributing to others repo
+clone --> when you own repo  
+fork --> when contributing to others repo
 
 Ciao Adios.
