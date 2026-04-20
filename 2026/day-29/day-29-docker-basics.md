@@ -75,7 +75,7 @@ Docker Daemon (dockerd) will pull the docker image from the registry, then the D
 
 <img width="2818" height="768" alt="image" src="https://github.com/user-attachments/assets/ef894464-0cda-4e02-aeb6-39547cb9220e" />
 
-<img width="2838" height="1334" alt="image" src="https://github.com/user-attachments/assets/7844da33-7e61-4b38-9257-a64e24341f0d" />
+<img width="2838" height="1334" alt="580959909-7844da33-7e61-4b38-9257-a64e24341f0d" src="https://github.com/user-attachments/assets/98f802c7-bfc2-44b1-b0fd-fdfff83a7fe8" />
 
 ---
 
@@ -90,7 +90,7 @@ Docker Daemon (dockerd) will pull the docker image from the registry, then the D
 
 <img width="2818" height="1202" alt="image" src="https://github.com/user-attachments/assets/54b88f5b-328f-4116-a10f-019d30bfe2bf" />
 
-<img width="2152" height="736" alt="image" src="https://github.com/user-attachments/assets/d3d632c7-67c6-4aae-8d6d-5fd326e4163d" />
+<img width="2152" height="736" alt="580963385-d3d632c7-67c6-4aae-8d6d-5fd326e4163d" src="https://github.com/user-attachments/assets/2caa175e-9c38-4f43-87b2-0c30f1af323e" />
 
 
 Ciaos Adios :)
