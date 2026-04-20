@@ -43,7 +43,7 @@
 - [x] Use if/elif/else and case statements
 - [x] Write for, while, and until loops
 - [x] Define and call functions with arguments and return values
-- [ ] Use grep, awk, sed, sort, uniq for text processing
+- [x] Use grep, awk, sed, sort, uniq for text processing
 - [x] Handle errors with set -e, set -u, set -o pipefail, trap
 - [x] Schedule scripts with crontab
 
@@ -86,7 +86,59 @@
 
    mount /dev/devops-vg/app-data /tmp/data --> this will mount the storage /dev/devops-vg/app-data to /tmp/data and now the path /tmp/data has 2G of storage.
    
+2. Explain GitFlow, GitHub Flow, and Trunk-Based Development:
+
+      GitFlow — develop, feature, release, hotfix branches
+
+      GitHub Flow — simple, single main branch + feature branches
+
+      Trunk-Based Development — everyone commits to main, short-lived branches
+
+    What to use when:
+
+    GitFlow
+    Flow:
+         
+         main → production  
+         develop → working  
+         feature → new work  
+         release → prepare release  
+         hotfix → urgent fix  
+   Use:
+         
+         big teams
+         scheduled releases
    
+   GitHub Flow
+   Flow:
+         
+         main → always deployable  
+         feature branch → PR → merge  
+    Use:
+         
+         startups
+         fast deployment
+    Trunk-Based
+    Flow:
+         
+         main → everyone commits
+   
+    short-lived branches  
+    Use:
+         
+         high-speed teams
+         CI/CD heavy
+         ANSWERS
+         
+     Startup:
+         
+          GitHub Flow
+     Large team:
+         
+          GitFlow
+     Modern DevOps:
+
+         Trunk-Based
 
 ### Task 3: Quick-Fire Questions
 Answer these from memory (no Googling). Then verify your answers:
