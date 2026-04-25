@@ -40,13 +40,12 @@
     docker compose logs -f → logs  
     docker compose up --build → rebuild  
 
-
-Cleanup
+## Cleanup
 
     docker system df → disk usage  
     docker system prune → clean unused  
 
-Dockerfile
+## Dockerfile
 
     FROM → base image  
     RUN → install packages  
@@ -56,8 +55,7 @@ Dockerfile
     CMD → default command  
     ENTRYPOINT → fixed command  
 
-
-Fix Weak Areas
+## Fix Weak Areas
 
     docker volume create test
     docker run -v test:/data ubuntu
