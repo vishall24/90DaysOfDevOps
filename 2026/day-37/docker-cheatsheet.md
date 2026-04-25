@@ -1,4 +1,4 @@
-Container Commands
+## Container Commands
   
     docker run -d nginx → run container in background  
     docker ps → list running containers  
@@ -8,7 +8,7 @@ Container Commands
     docker logs <id> → view logs  
 
 
-Image Commands
+## Image Commands
 
     docker pull nginx → download image  
     docker build -t app:v1 . → build image  
@@ -17,7 +17,7 @@ Image Commands
     docker tag app:v1 user/app:v1 → tag image  
     docker push user/app:v1 → push to Docker Hub  
     
-Volume Commands
+## Volume Commands
 
     docker volume create myvol → create volume  
     docker volume ls → list volumes  
@@ -25,14 +25,14 @@ Volume Commands
     docker volume rm myvol → delete volume  
 
 
-Network Commands
+## Network Commands
 
     docker network create mynet → create network  
     docker network ls → list networks  
     docker network inspect mynet → inspect  
     docker run --network mynet → attach container 
     
-Compose Commands
+## Compose Commands
 
     docker compose up -d → start services  
     docker compose down → stop & remove  
