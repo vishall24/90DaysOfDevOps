@@ -66,7 +66,7 @@ Stage 3: Deploy
 
 ## Real World Pipeline
 
-Repository: Node.js (example)
+Repository: Node.js ( https://github.com/nodejs/node/blob/main/.github/workflows/codeql.yml )
 
 Trigger:
 On cron job every midnight 12 AM 
