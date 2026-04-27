@@ -1,6 +1,5 @@
-<img width="1978" height="1210" alt="image" src="https://github.com/user-attachments/assets/8a85670b-7d8f-44ee-94dc-45c7c7ab5029" /># Day 44 – Secrets, Artifacts & Running Real Tests in CI
 
-## Task
+## Task # Day 44 – Secrets, Artifacts & Running Real Tests in CI
 Today your pipeline starts doing **real work** — storing sensitive values securely, saving build outputs, and running actual tests from your previous days.
 
 ---
