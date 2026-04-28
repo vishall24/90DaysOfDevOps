@@ -118,3 +118,273 @@ Write in your notes: When would you use `paths` vs `paths-ignore`?
 
 ---
 
+
+      yaml file:
+      
+      name: Path & branch filter
+      
+      on:
+        push:
+          branches: [main, feature/*]
+          paths:
+            - 'src/**'
+            - 'app/**'
+      
+          paths-ignore:
+              - '*.md'
+              - 'docs/**'
+      
+      jobs:
+          test-run:
+              runs-on: ubuntu-latest
+              steps:
+                  - name: sample text
+                    run: |
+                      echo "Hello world"
+
+
+---
+
+### Task 5: `workflow_run` — Chain Workflows Together
+Create two workflows:
+1. `.github/workflows/tests.yml` — runs tests on every push
+2. `.github/workflows/deploy-after-tests.yml` — triggers **only after** `tests.yml` completes successfully:
+   ```yaml
+   on:
+     workflow_run:
+       workflows: ["Run Tests"]
+       types: [completed]
+   ```
+3. In the deploy workflow, add a conditional:
+   - Only proceed if the triggering workflow **succeeded** (`${{ github.event.workflow_run.conclusion == 'success' }}`)
+   - Print a warning and exit if it failed
+
+**Verify:** Push a commit — does the test workflow run first, then trigger the deploy workflow?
+
+---
+
+
+<img width="785" height="493" alt="image" src="https://github.com/user-attachments/assets/cc666fdc-636a-44ba-95eb-bd5f46b7052a" />
+
+---
+
+### Task 6: `repository_dispatch` — External Event Triggers
+1. Create `.github/workflows/external-trigger.yml` with trigger `repository_dispatch`
+2. Set it to respond to event type: `deploy-request`
+3. Print the client payload: `${{ github.event.client_payload.environment }}`
+4. Trigger it using `curl` or `gh`:
+   ```bash
+   gh api repos/<owner>/<repo>/dispatches \
+     -f event_type=deploy-request \
+     -f client_payload='{"environment":"production"}'
+   ```
+
+Write in your notes: When would an external system (like a Slack bot or monitoring tool) trigger a pipeline?
+
+---
+      
+      name: External Trigger
+      
+      on:
+        repository_dispatch:
+          types: [deploy-request]
+      
+      jobs:
+        external:
+          runs-on: ubuntu-latest
+      
+          steps:
+            - run: |
+                echo "Env: ${{ github.event.client_payload.environment }}"
+
+execute this to run the workflow: gh api repos/vishall24/github-actions-practice-tws/dispatches ` -f event_type=deploy-request ` -f client_payload="{\"environment\":\"production\"}"
+
+
+workflow_run vs workflow_call
+workflow_call → manual reuse (like function call)
+workflow_run → automatic chaining after another workflow
+
+
+
+
+
+## test.yaml:
+
+      name: Run Tests
+      
+      on: push
+      
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          steps:
+            - run: echo "Running tests"
+
+
+## deploy-after-test:
+
+      name: Deploy
+      
+      on:
+        workflow_run:
+          workflows: ["Run Tests"]
+          types: [completed]
+      
+      jobs:
+        deploy:
+          runs-on: ubuntu-latest
+      
+          steps:
+            - name: Check result
+              if: github.event.workflow_run.conclusion == 'success'
+              run: echo "Deploying..."
+      
+            - name: Failed case
+              if: github.event.workflow_run.conclusion != 'success'
+              run: echo "Tests failed, not deploying"
+
+
+
+## external:
+      
+      name: External Trigger
+      
+      on:
+        repository_dispatch:
+          types: [deploy-request]
+      
+      jobs:
+        external:
+          runs-on: ubuntu-latest
+      
+          steps:
+            - run: |
+                echo "Env: ${{ github.event.client_payload.environment }}"
+
+
+
+## path_based_publish:
+
+      name: Path & branch filter
+      
+      on:
+        push:
+          branches: [main, feature/*]
+          paths:
+            - 'src/**'
+            - 'app/**'
+      
+          paths-ignore:
+              - '*.md'
+              - 'docs/**'
+      
+      jobs:
+          test-run:
+              runs-on: ubuntu-latest
+              steps:
+                  - name: sample text
+                    run: |
+                      echo "Hello world"
+
+
+
+## pr-lifecycle.yaml:
+
+      name: PR Lifecycle
+      
+      on: 
+        pull_request:
+          types: [opened , synchronize, reopened, closed]
+      
+      
+      jobs:
+          pr-info:
+              runs-on: ubuntu-latest
+      
+              steps:
+                  - name: Print PR details
+                    run: |
+                      echo "Event: ${{ github.event.action }}"
+                      echo "Title: ${{ github.event.pull_request.title }}"
+                      echo "Author: ${{ github.event.pull_request.user.login }}"
+                      echo "Source: ${{ github.head_ref }}"
+                      echo "Target: ${{ github.base_ref }}"
+      
+                  - name: Only when PR merged
+                    if: github.event.pull_request.merged == true
+                    run: echo "PR was merged"
+
+
+## pr-check.yml:
+
+      name: PR check
+      
+      on:
+        pull_request:
+          branches: [main]
+      
+      jobs:
+        pr-job:
+          runs-on: ubuntu-latest
+      
+          steps:
+            - name: Print PR info
+              run: |
+                echo "PR check running for branch == ${{ github.head_ref }}"
+      
+            - name: Check file size
+              run: |
+                for file in $(find . -type f); do
+                  size=$(du -k "$file" | cut -f1)
+                  if [ $size -gt 1024 ]; then
+                    echo "File $file too large"
+                    exit 1
+                  else 
+                    echo "less than 1 MB"
+                  fi
+                done
+      
+            - name: Check branch name
+              run: |
+                branch="${{ github.head_ref }}"
+                if [[ ! "$branch" =~ ^(feature|fix|docs)/ ]]; then
+                  echo "Invalid branch name"
+                  exit 1
+                fi
+      
+            - name: Check PR body
+              continue-on-error: true
+              run: |
+                if [ -z "${{ github.event.pull_request.body }}" ]; then
+                  echo "PR description is empty"
+                  exit 1
+                fi
+      
+
+
+## scheduled.yaml:
+
+
+         name: Scheduled Tasks
+         
+         on:
+           schedule:
+             - cron: '30 2 * * 1'
+             - cron: '0 */6 * * *'
+           workflow_dispatch:
+         
+         jobs:
+           schedule-job:
+             runs-on: ubuntu-latest
+         
+             steps:
+               
+               - run: |
+                  echo "Triggered by: ${{ github.event.schedule }}"
+         
+               - name: Health check
+                 run: curl -I https://google.com
+
+
+
+        
