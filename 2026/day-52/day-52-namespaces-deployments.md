@@ -310,9 +310,11 @@ All resources deleted:
 
 Deleting namespace = deletes EVERYTHING inside
 
-Pod               | vs    | Deployment
-Feature        	  | Pod   |	Deployment
-Auto heal         |	❌	  | ✅
-Scaling	          | ❌    |	✅
-Rolling update	  | ❌	  | ✅
-Production ready	| ❌	  | ✅
+## Pod vs Deployment
+
+| Feature            | Pod | Deployment |
+|------------------|-----|-----------|
+| Auto heal        | ❌  | ✅        |
+| Scaling          | ❌  | ✅        |
+| Rolling update   | ❌  | ✅        |
+| Production ready | ❌  | ✅        |
