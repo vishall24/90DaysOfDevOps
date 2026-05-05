@@ -120,8 +120,245 @@ able to ping:
 
 Request goes:
 
-test-client → service → one of pods
+test-client ( pod ) → service ( clusterIP ( service yaml file ) ) → one of pods ( of web app ( with 3 replica))
+
 Try multiple times
 
 You hit different pods (load balancing)
 
+service IP is static and the traffic will go from service so even if the pods IP changes no problem 
+
+---
+
+### Task 3: Discover Services with DNS
+Kubernetes has a built-in DNS server. Every Service gets a DNS entry automatically:
+
+```
+<service-name>.<namespace>.svc.cluster.local
+```
+
+Test this:
+```bash
+kubectl run dns-test --image=busybox:latest --rm -it --restart=Never -- sh
+
+# Inside the pod:
+# Short name (works within the same namespace)
+wget -qO- http://web-app-clusterip
+
+# Full DNS name
+wget -qO- http://web-app-clusterip.default.svc.cluster.local
+
+# Look up the DNS entry
+nslookup web-app-clusterip
+exit
+```
+
+Both the short name and the full DNS name resolve to the same ClusterIP. In practice, you use the short name when communicating within the same namespace and the full name when reaching across namespaces.
+
+**Verify:** What IP does `nslookup` return? Does it match the CLUSTER-IP from `kubectl get services`?
+
+---
+
+<img width="1704" height="716" alt="image" src="https://github.com/user-attachments/assets/83bfb001-e8c1-4a65-9cbe-ba643efbb3c7" />
+
+<img width="1880" height="1108" alt="image" src="https://github.com/user-attachments/assets/b0a5eaea-c2eb-4b5e-9022-08557e91c42b" />
+
+The IP address of service and the response of nslookup are same.
+
+---
+
+### Task 4: NodePort Service (External Access via Node)
+A NodePort Service exposes your application on a port on every node in the cluster. This lets you access the Service from outside the cluster.
+
+Create `nodeport-service.yaml`:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app-nodeport
+spec:
+  type: NodePort
+  selector:
+    app: web-app
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30080
+```
+
+- `nodePort: 30080` — the port opened on every node (must be in range 30000-32767)
+- Traffic flow: `<NodeIP>:30080` -> Service -> Pod:80
+
+```bash
+kubectl apply -f nodeport-service.yaml
+kubectl get services
+```
+
+Access the service:
+```bash
+# If using Minikube
+minikube service web-app-nodeport --url
+
+# If using Kind, get the node IP first
+kubectl get nodes -o wide
+# Then curl <node-internal-ip>:30080
+
+# If using Docker Desktop
+curl http://localhost:30080
+```
+
+**Verify:** Can you see the Nginx welcome page from your browser or terminal using the NodePort?
+
+---
+
+Problem
+
+-  ClusterIP only works inside cluster
+
+Solution → NodePort
+
+accessed from browser:
+
+<img width="2282" height="736" alt="image" src="https://github.com/user-attachments/assets/bc6e1191-2362-477a-ad7c-fb1a49fb5a83" />
+
+Port mapping since the cluster is runnning in kind and the whole cluster is running inside a docker container and outer world does not have 
+access to it:
+
+<img width="2228" height="258" alt="image" src="https://github.com/user-attachments/assets/6ca91e66-59eb-4774-9c7e-7306b200221f" />
+
+
+---
+
+### Task 5: LoadBalancer Service (Cloud External Access)
+In a cloud environment (AWS, GCP, Azure), a LoadBalancer Service provisions a real external load balancer that routes traffic to your nodes.
+
+Create `loadbalancer-service.yaml`:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app-loadbalancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-app
+  ports:
+  - port: 80
+    targetPort: 80
+```
+
+```bash
+kubectl apply -f loadbalancer-service.yaml
+kubectl get services
+```
+
+On a local cluster (Minikube, Kind, Docker Desktop), the EXTERNAL-IP will show `<pending>` because there is no cloud provider to create a real load balancer. This is expected.
+ 
+If you are using Minikube:
+```bash
+# Minikube can simulate a LoadBalancer
+minikube tunnel
+# In another terminal, check again:
+kubectl get services
+```
+
+In a real cloud cluster, the EXTERNAL-IP would be a public IP address or hostname provisioned by the cloud provider.
+
+**Verify:** What does the EXTERNAL-IP column show? Why is it `<pending>` on a local cluster?
+
+---
+
+LoadBalancer:
+
+OUTPUT:
+EXTERNAL-IP: <pending>
+
+Why pending?
+ You are not on AWS / GCP
+ No real load balancer
+
+ <img width="1924" height="272" alt="image" src="https://github.com/user-attachments/assets/28d3fcd9-69c8-4640-95ab-f5d664b8bc31" />
+
+---
+
+### Task 6: Understand the Service Types Side by Side
+Check all three services:
+
+```bash
+kubectl get services -o wide
+```
+
+Compare them:
+
+| Type | Accessible From | Use Case |
+|------|----------------|----------|
+| ClusterIP | Inside the cluster only | Internal communication between services |
+| NodePort | Outside via `<NodeIP>:<NodePort>` | Development, testing, direct node access |
+| LoadBalancer | Outside via cloud load balancer | Production traffic in cloud environments |
+
+Each type builds on the previous one:
+- LoadBalancer creates a NodePort, which creates a ClusterIP
+- So a LoadBalancer service also has a ClusterIP and a NodePort
+
+Verify this:
+```bash
+kubectl describe service web-app-loadbalancer
+```
+
+You should see all three: a ClusterIP, a NodePort, and the LoadBalancer configuration.
+
+**Verify:** Does the LoadBalancer service also have a ClusterIP and NodePort assigned?
+
+---
+
+Understand:
+Type	|    Meaning
+ClusterIP	| internal only
+NodePort	| external via port
+LoadBalancer | real external
+
+LoadBalancer = NodePort + ClusterIP is assigned 
+
+Additional:
+
+Endpoints:
+
+<img width="1990" height="184" alt="image" src="https://github.com/user-attachments/assets/644dafee-6297-414c-863b-d2a50411d775" />
+
+---
+
+### Task 7: Clean Up
+```bash
+kubectl delete -f app-deployment.yaml
+kubectl delete -f clusterip-service.yaml
+kubectl delete -f nodeport-service.yaml
+kubectl delete -f loadbalancer-service.yaml
+
+kubectl get pods
+kubectl get services
+```
+
+Only the built-in `kubernetes` service in the default namespace should remain.
+
+**Verify:** Is everything cleaned up?
+
+---
+Done
+
+Final understanding:
+
+Without Service
+
+ - You chase pod IPs
+
+With Service
+
+  One stable name
+  Load balancing
+  No worry about pod changes
+
+  Service = stable entry point + load balancer for pods
+
+  
