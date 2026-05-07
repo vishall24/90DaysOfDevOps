@@ -1,4 +1,5 @@
-<img width="720" height="396" alt="image" src="https://github.com/user-attachments/assets/e9530a36-f415-422b-afce-f2b3741826ff" /><img width="1416" height="102" alt="image" src="https://github.com/user-attachments/assets/69a599d0-85ae-4e38-ace1-417cac1281b9" /># Day 56 – Kubernetes StatefulSets
+
+# Day 56 – Kubernetes StatefulSets
 
 ## Task
 Deployments work great for stateless apps, but what about databases? You need stable pod names, ordered startup, and persistent storage per replica. Today you learn StatefulSets — the workload designed for stateful applications like MySQL, PostgreSQL, and Kafka.
@@ -153,6 +154,8 @@ after executing : kubectl run dns-test --image=busybox:1.28 --rm -it --restart=N
 
 
 Verified: nslookup IP matches the pod IP from kubectl get pods -o wide.:
+
+<img width="1416" height="102" alt="image" src="https://github.com/user-attachments/assets/69a599d0-85ae-4e38-ace1-417cac1281b9" />
 
 <img width="1171" height="105" alt="image" src="https://github.com/user-attachments/assets/4295fa1e-2fe1-4565-9dd8-a669059112b3" />
 
