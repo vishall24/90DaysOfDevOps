@@ -218,3 +218,154 @@ Concept First:
 This is the most important task — understanding what's inside a chart.
 When you run helm create my-app it generates this structure:
 
+
+Concept First
+This is the most important task — understanding what's inside a chart.
+When you run helm create my-app it generates this structure:
+
+        my-app/
+        ├── Chart.yaml          ← Chart metadata (name, version, description)
+        ├── values.yaml         ← Default values (users override these)
+        └── templates/          ← Kubernetes YAML templates with Go templating
+            ├── deployment.yaml
+            ├── service.yaml
+            ├── _helpers.tpl    ← Reusable template snippets
+            └── ...
+
+
+Go templating lets you use variables in your YAML:
+
+    replicas: {{ .Values.replicaCount }}    ← pulls from values.yaml
+    name: {{ .Chart.Name }}                 ← pulls from Chart.yaml
+    name: {{ .Release.Name }}              ← the name you give at install
+
+So the same template file generates different YAML depending on what values you pass in.
+
+<img width="869" height="625" alt="image" src="https://github.com/user-attachments/assets/749c842f-dadf-4029-911b-ab47c66e8eb9" />
+
+Notice the {{ .Values.xxx }} placeholders — these get replaced with real values at install time.
+
+cat my-app/Charts.yaml:
+
+<img width="1003" height="504" alt="image" src="https://github.com/user-attachments/assets/facfd84d-77af-463e-853c-61b5237be78f" />
+
+This has the chart name, version, and description.
+
+edited these values:
+
+<img width="897" height="311" alt="image" src="https://github.com/user-attachments/assets/94c87fab-52da-435e-b1f8-a9694c3e392c" />
+
+Validate the chart:
+
+helm lint my-app
+ 
+    Output:
+    ==> Linting my-app
+    [INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+No errors = chart is valid!
+
+Preview what Kubernetes YAML will be generated (without installing):
+
+helm template my-release ./my-app
+
+This prints all the rendered YAML — great for debugging before you actually apply anything.
+
+Install your custom chart:
+
+<img width="1432" height="288" alt="image" src="https://github.com/user-attachments/assets/be986e92-5f96-45cb-bdcc-58d23a6b0b80" />
+
+Verified with pods:
+
+<img width="754" height="246" alt="image" src="https://github.com/user-attachments/assets/575d9f97-436e-45e5-843a-c428f17c5e76" />
+
+set replica to 5:
+
+<img width="1426" height="584" alt="image" src="https://github.com/user-attachments/assets/3b18f307-b3f1-4c9c-8843-b3d12e85a858" />
+
+---
+
+### Task 7: Clean Up
+1. Uninstall all releases: `helm uninstall <name>` for each
+2. Remove chart directory and values file
+3. Use `--keep-history` if you want to retain release history for auditing
+
+**Verify:** Does `helm list` show zero releases?
+
+---
+
+
+<img width="1348" height="629" alt="image" src="https://github.com/user-attachments/assets/ba708027-aca7-4231-a8da-cad5beef3bb8" />
+
+
+---
+
+## What is Helm?
+Helm is the package manager for Kubernetes — like apt for Ubuntu or npm for Node.js.
+Instead of managing 20+ individual YAML files per app, you install one Chart
+with one command and customize it with a values file.
+
+## Three Core Concepts
+
+| Term | What it means |
+|---|---|
+| Chart | Package of Kubernetes manifest templates |
+| Release | One installed instance of a chart in your cluster |
+| Repository | Collection of charts hosted online (like Bitnami) |
+
+## How to Install, Customize, Upgrade, Rollback
+
+| Action | Command |
+|---|---|
+| Install | `helm install <release> <chart>` |
+| Customize (CLI) | `helm install <release> <chart> --set key=value` |
+| Customize (file) | `helm install <release> <chart> -f values.yaml` |
+| Upgrade | `helm upgrade <release> <chart>` |
+| Rollback | `helm rollback <release> <revision>` |
+| History | `helm history <release>` |
+| Uninstall | `helm uninstall <release>` |
+
+## Helm Chart Structure
+
+        my-app/
+        ├── Chart.yaml        ← Chart metadata (name, version)
+        ├── values.yaml       ← Default values (users override these)
+        └── templates/        ← Kubernetes YAML with Go templating
+        ├── deployment.yaml
+        └── service.yaml
+
+
+## Go Templating
+Templates use {{ }} syntax to inject values at install time:
+- {{ .Values.replicaCount }} → from values.yaml
+- {{ .Chart.Name }} → from Chart.yaml
+- {{ .Release.Name }} → the name given at helm install
+
+## Upgrade and Rollback
+- Every change creates a new revision in history
+- Rollback creates a NEW revision — it never overwrites history
+- Full audit trail is always preserved
+
+## Useful Commands
+- `helm show values <chart>` → see all customizable values
+- `helm template <release> <chart>` → preview YAML without installing
+- `helm lint <chart>` → validate chart before installing
+- `helm get values <release>` → see what overrides were applied
+- `helm get manifest <release>` → see all generated Kubernetes YAML
+
+
+| Concept | What it means |
+|---|---|
+| Chart | Package of Kubernetes templates — like a .deb package |
+| Release | One installed instance of a chart in your cluster |
+| Repository | Online collection of charts (Bitnami, ArtifactHub) |
+| `helm install` | Deploy a chart as a new release |
+| `--set key=value` | Quick single value override on command line |
+| `-f values.yaml` | File-based overrides — better for multiple values |
+| `helm upgrade` | Update a release — creates new revision in history |
+| `helm rollback` | Revert to a previous revision — creates a NEW revision |
+| `helm history` | Full audit trail of all revisions for a release |
+| `helm lint` | Validate chart structure before installing |
+| `helm template` | Preview generated YAML without installing anything |
+| Go templating | `{{ .Values.key }}` syntax — injects values into YAML templates |
