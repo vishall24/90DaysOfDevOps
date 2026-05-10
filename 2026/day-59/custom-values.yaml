@@ -1,0 +1,15 @@
+# Number of nginx pod replicas
+replicaCount: 3
+
+# Service configuration
+service:
+  type: NodePort
+
+# Resource limits per pod
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
