@@ -436,13 +436,14 @@ terraform destroy
 
 terraform init -upgrade:
 
-upgraded three modules:
+<img width="1164" height="621" alt="image" src="https://github.com/user-attachments/assets/a6e513f0-a524-4e71-b2af-7950c48560ce" />
 
-<img width="1649" height="190" alt="image" src="https://github.com/user-attachments/assets/b9526111-d8b6-4660-a8b8-11d5dd7af349" />
 
 <img width="1662" height="400" alt="image" src="https://github.com/user-attachments/assets/985f76c2-eee0-4049-bc08-e5324da616c6" />
 
 Every resource is prefixed with module.<name>. — this is how Terraform organises state for modules.
+
+did terraform destroy.
 
 ---
 
