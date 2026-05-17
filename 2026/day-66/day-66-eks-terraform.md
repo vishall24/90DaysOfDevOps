@@ -389,6 +389,9 @@ deleted kubernetes resources first:
 
 <img width="1061" height="199" alt="image" src="https://github.com/user-attachments/assets/42e86678-f20b-4cb3-9fc6-abef77462f8d" />
 
+deleted all resources using terraform destroy:
+
+<img width="807" height="615" alt="image" src="https://github.com/user-attachments/assets/3860f06d-96cd-404d-ab04-6a5e189a76dc" />
 
 ---
 
