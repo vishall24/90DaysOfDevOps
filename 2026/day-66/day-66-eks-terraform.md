@@ -8,29 +8,30 @@ This is what infrastructure teams do every day in production.
 ---
 
 What Are We Building Today?
-Your Terminal
-     ↓
-  Terraform
-     ↓
-┌─────────────────────────────────────┐
-│  AWS VPC (10.0.0.0/16)              │
-│  ├── Public Subnet 1 (10.0.1.0/24)  │
-│  ├── Public Subnet 2 (10.0.2.0/24)  │
-│  ├── Private Subnet 1 (10.0.3.0/24) │← EKS nodes live here
-│  ├── Private Subnet 2 (10.0.4.0/24) │← EKS nodes live here
-│  ├── NAT Gateway                    │← Private nodes reach internet
-│  └── Internet Gateway               │
-│                                     │
-│  EKS Cluster (terraweek-eks)        │
-│  └── Managed Node Group             │
-│       ├── Node 1 (t3.medium)        │
-│       └── Node 2 (t3.medium)        │
-└─────────────────────────────────────┘
-     ↓
-  kubectl
-     ↓
-  Nginx Deployment (3 pods)
-  LoadBalancer Service → Browser
+
+          Your Terminal
+               ↓
+            Terraform
+               ↓
+          ┌─────────────────────────────────────┐
+          │  AWS VPC (10.0.0.0/16)              │
+          │  ├── Public Subnet 1 (10.0.1.0/24)  │
+          │  ├── Public Subnet 2 (10.0.2.0/24)  │
+          │  ├── Private Subnet 1 (10.0.3.0/24) │← EKS nodes live here
+          │  ├── Private Subnet 2 (10.0.4.0/24) │← EKS nodes live here
+          │  ├── NAT Gateway                    │← Private nodes reach internet
+          │  └── Internet Gateway               │
+          │                                     │
+          │  EKS Cluster (terraweek-eks)        │
+          │  └── Managed Node Group             │
+          │       ├── Node 1 (t3.medium)        │
+          │       └── Node 2 (t3.medium)        │
+          └─────────────────────────────────────┘
+               ↓
+            kubectl
+               ↓
+            Nginx Deployment (3 pods)
+            LoadBalancer Service → Browser
 
 Why is this impressive?
 
