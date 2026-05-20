@@ -396,3 +396,282 @@ Critical syntax rule — NO {{ }} inside when:
 
 group_names is a built-in variable — a list of all groups the current host belongs to. So 'web' in group_names is true on web-server and false on db-server.
 
+created conditional-demo.yml:
+
+<img width="465" height="725" alt="image" src="https://github.com/user-attachments/assets/f9f1310b-ed7f-4fda-b30e-5e727743e09f" />
+
+Applied and ran the playbook:
+
+<img width="810" height="921" alt="image" src="https://github.com/user-attachments/assets/59edfa35-6f8d-4b4b-8d49-5f98d837420e" />
+
+Watch the output — tasks that don't match show skipping.
+
+      TASK [Install Nginx (only on web servers)] ***
+      changed: [web-server]
+      skipping: [db-server]        ← db-server is not in web group
+      
+      TASK [Install MySQL (only on db servers)] ***
+      skipping: [web-server]       ← web-server is not in db group
+      changed: [db-server]
+      
+      TASK [Run only on Ubuntu] ***
+      skipping: [web-server]       ← web-server is Amazon Linux, not Ubuntu
+      skipping: [db-server]
+      
+      TASK [Run only in production] ***
+      skipping: [web-server]       ← app_env is "development" from group_vars/all.yml
+      skipping: [db-server]
+
+Conditional types:
+
+| Type | Syntax | Example |
+|---|---|---|
+| Simple equality | `when: var == "value"` | `when: app_env == "production"` |
+| Group check | `when: "'group' in group_names"` | `when: "'web' in group_names"` |
+| Number compare | `when: fact < number` | `when: ansible_memtotal_mb < 1024` |
+| AND (both true) | List format under `when:` | `when:`<br>`  - app_env == "prod"`<br>`  - ansible_memtotal_mb > 1024` |
+| OR (either true) | Single line with `or` | `when: "'web' in group_names or 'app' in group_names"` |
+
+---
+
+### Task 5: Loops
+Create `loops-demo.yml`:
+
+```yaml
+---
+- name: Loops demo
+  hosts: all
+  become: true
+
+  vars:
+    users:
+      - name: deploy
+        groups: wheel
+      - name: monitor
+        groups: wheel
+      - name: appuser
+        groups: users
+
+    directories:
+      - /opt/app/logs
+      - /opt/app/config
+      - /opt/app/data
+      - /opt/app/tmp
+
+  tasks:
+    - name: Create multiple users
+      user:
+        name: "{{ item.name }}"
+        groups: "{{ item.groups }}"
+        state: present
+      loop: "{{ users }}"
+
+    - name: Create multiple directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ directories }}"
+
+    - name: Install multiple packages
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - git
+        - curl
+        - unzip
+        - jq
+
+    - name: Print each user created
+      debug:
+        msg: "Created user {{ item.name }} in group {{ item.groups }}"
+      loop: "{{ users }}"
+```
+
+Run it and observe the loop output -- each iteration is shown separately.
+
+**Document:** What is the difference between `loop` and the older `with_items`? (hint: `loop` is the modern recommended syntax)
+
+---
+
+
+Concept First:
+
+loop lets you run one task for multiple items without copy-pasting the same task 10 times. Ansible iterates through the list and runs the task once per item. The current item is always available as {{ item }}.
+For simple lists, {{ item }} is the value itself. For lists of dictionaries, you access fields with {{ item.fieldname }}.
+
+created loop-demo.yml:
+
+<img width="501" height="650" alt="image" src="https://github.com/user-attachments/assets/4c37b3ef-2137-4d7d-a1a7-6e9afaced364" />
+
+ansible-playbook loop-demo.yml:
+
+<img width="815" height="997" alt="image" src="https://github.com/user-attachments/assets/99e5c978-dadd-4e5f-a268-6a92344751b3" />
+
+loop vs with_items:
+
+| Feature | `loop` | `with_items` |
+|---|---|---|
+| Status | Modern, recommended | Old, deprecated |
+| Available since | Ansible 2.5 | Original Ansible |
+| Works for | Lists, dicts, nested loops | Basic lists only |
+| Use it? | Yes, always | No, avoid in new playbooks |
+
+
+---
+
+### Task 6: Register, Debug, and Combine Everything
+Build a real-world playbook `server-report.yml` that combines variables, facts, conditionals, and register:
+
+```yaml
+---
+- name: Server Health Report
+  hosts: all
+
+  tasks:
+    - name: Check disk space
+      command: df -h /
+      register: disk_result
+
+    - name: Check memory
+      command: free -m
+      register: memory_result
+
+    - name: Check running services
+      shell: systemctl list-units --type=service --state=running | head -20
+      register: services_result
+
+    - name: Generate report
+      debug:
+        msg:
+          - "========== {{ inventory_hostname }} =========="
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "IP: {{ ansible_default_ipv4.address }}"
+          - "RAM: {{ ansible_memtotal_mb }}MB"
+          - "Disk: {{ disk_result.stdout_lines[1] }}"
+          - "Running services (first 20): {{ services_result.stdout_lines | length }}"
+
+    - name: Flag if disk is critically low
+      debug:
+        msg: "ALERT: Check disk space on {{ inventory_hostname }}"
+      when: "'9[0-9]%' in disk_result.stdout or '100%' in disk_result.stdout"
+
+    - name: Save report to file
+      copy:
+        content: |
+          Server: {{ inventory_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          IP: {{ ansible_default_ipv4.address }}
+          RAM: {{ ansible_memtotal_mb }}MB
+          Disk: {{ disk_result.stdout }}
+          Checked at: {{ ansible_date_time.iso8601 }}
+        dest: "/tmp/server-report-{{ inventory_hostname }}.txt"
+      become: true
+```
+
+Run it and verify the report file is created on each server.
+
+**Verify:** SSH into a server and read `/tmp/server-report-*.txt`. Does it contain accurate information?
+
+---
+
+Concept First:
+
+register saves the entire output of a task into a variable you can use in later tasks. This is how you make decisions based on what actually happened on the server at runtime.
+
+    - name: Check disk
+      command: df -h /
+      register: disk_result        # saves everything into this variable
+    
+    - name: Use the output
+      debug:
+        msg: "{{ disk_result.stdout }}"   # the command output as a string
+
+The register object always contains:
+
+| Key | What it holds |
+|---|---|
+| `disk_result.stdout` | Command output as one big string |
+| `disk_result.stdout_lines` | Command output as a list, one element per line |
+| `disk_result.rc` | Return code — `0` means success |
+| `disk_result.stderr` | Any error output |
+
+vim server-report.yml: 
+
+<img width="611" height="574" alt="image" src="https://github.com/user-attachments/assets/28dc00d1-2160-44d3-b7e3-c65e9891293a" />
+
+ran the playbook:
+
+<img width="807" height="916" alt="image" src="https://github.com/user-attachments/assets/f720c344-e7ec-4498-a80d-dfc33b081e95" />
+
+see report generated.
+
+ SSH into the server and verify the report file was created:
+
+<img width="1359" height="174" alt="image" src="https://github.com/user-attachments/assets/f5ed2336-9dfc-482f-aa02-1d6fb65b41c3" />
+
+ Report file exists on each server with accurate live data pulled from that server automatically.
+
+---
+
+## Directory Structure
+
+ansible-practice/
+  inventory.ini
+  ansible.cfg
+  group_vars/
+    all.yml        ← applies to every host
+    web.yml        ← applies to [web] group only
+    db.yml         ← applies to [db] group only
+  host_vars/
+    web-server.yml ← applies to web-server only
+  playbooks/
+    site.yml
+
+## Variable Precedence (low → high)
+
+| Priority | Source | Example |
+|---|---|---|
+| Lowest | group_vars/all.yml | app_env: development |
+| ↓ | group_vars/web.yml | max_connections: 1000 |
+| ↓ | host_vars/web-server.yml | max_connections: 2000 ← wins over group |
+| ↓ | playbook vars: section | app_name: terraweek-app |
+| Highest | -e on command line | -e "app_env=production" ← always wins |
+
+## Five Useful Ansible Facts
+
+| Fact | What it contains | Where I would use it |
+|---|---|---|
+| `ansible_distribution` | "Amazon", "Ubuntu", "CentOS" | Conditionally use yum vs apt |
+| `ansible_memtotal_mb` | Total RAM in MB e.g. 985 | Alert when server has less than 1GB RAM |
+| `ansible_default_ipv4.address` | Primary IP e.g. 10.0.1.5 | Write server IP into config files |
+| `ansible_hostname` | Short hostname e.g. web-server | Name log files or reports per server |
+| `ansible_os_family` | "RedHat", "Debian" | Broader OS check — covers Amazon, CentOS, RHEL |
+
+## loop vs with_items
+
+| | `loop` | `with_items` |
+|---|---|---|
+| Status | Modern, recommended | Old, deprecated |
+| Available since | Ansible 2.5 | Original Ansible |
+| Use it? | Yes, always | No, avoid in new playbooks |
+
+## Server Report Output
+
+<img width="1359" height="174" alt="image" src="https://github.com/user-attachments/assets/f5ed2336-9dfc-482f-aa02-1d6fb65b41c3" />
+
+### Summary:
+
+| Concept | What it means |
+|---|---|
+| `vars:` in playbook | Define variables inside the playbook itself |
+| `group_vars/` | Auto-loaded variable files per group |
+| `host_vars/` | Auto-loaded variable files per host — beats `group_vars` |
+| `-e` flag | CLI override — beats everything including `host_vars` |
+| Facts | Auto-collected from hosts at runtime — OS, IP, RAM etc |
+| `when:` | Skip task if condition is false — shows `skipping` in output |
+| `loop:` | Run one task for multiple items — modern syntax |
+| `register:` | Save task output into a variable for use in later tasks |
+| `stdout_lines` | The registered output split into a list line by line |
+| `group_names` | Built-in list of groups the current host belongs to |
