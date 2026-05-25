@@ -649,3 +649,303 @@ vim alert-rules.yaml:
 
 <img width="1444" height="1094" alt="image" src="https://github.com/user-attachments/assets/62e4926f-ce28-4d66-bde2-a5ad1e43f569" />
 
+mounted the rules file:
+
+<img width="1160" height="960" alt="image" src="https://github.com/user-attachments/assets/fa6f2942-23d6-4302-ab72-8564a24c35ae" />
+
+debugging: make sure to edit the prometheus.yaml and add the rules file there as well or else it will not work !!:
+
+<img width="912" height="599" alt="image" src="https://github.com/user-attachments/assets/321c19fc-dadd-44f9-aa61-edb765df585e" />
+
+prometheus/rules:
+
+<img width="1908" height="610" alt="image" src="https://github.com/user-attachments/assets/e2a79578-888c-44f0-8c5c-710d5a699cfa" />
+
+prometheus/alerts:
+
+<img width="1915" height="654" alt="image" src="https://github.com/user-attachments/assets/06ed14db-5689-4a02-9755-7988f8251aaf" />
+
+                # Stop a container
+                docker compose stop cadvisor
+                
+                # Wait 1-2 minutes, then check
+                # http://localhost:9090/alerts
+                # cadvisor TargetDown should move to Pending then Firing
+
+<img width="1909" height="944" alt="image" src="https://github.com/user-attachments/assets/33036d04-1f48-4561-8279-253799b743cd" />
+
+<img width="1919" height="911" alt="image" src="https://github.com/user-attachments/assets/c829d696-8029-4a1d-9f4b-9310d08e29c3" />
+
+Wait and watch the alert go: Inactive → Pending → Firing 
+
+                docker compose start cadvisor
+
+<img width="1919" height="907" alt="image" src="https://github.com/user-attachments/assets/bf293041-9ed5-4af2-8c9c-2345e6d8deb9" />
+
+Verify: All 5 rules visible in Prometheus, TargetDown fires when a service stops.
+
+---
+
+### Task 5: Set Up Grafana Alerts
+Grafana can also evaluate alerts and send notifications to Slack, email, PagerDuty, and more.
+
+1. **Create a contact point:**
+   - Go to Alerting > Contact points > Add contact point
+   - Name: "DevOps Team"
+   - Integration: Choose email (or Slack webhook if you have one)
+   - For email: just enter your email address
+   - Save
+
+2. **Create an alert rule in Grafana:**
+   - Go to Alerting > Alert rules > New alert rule
+   - Name: "High Container Memory"
+   - Query: `container_memory_usage_bytes{name="notes-app"} / 1024 / 1024`
+   - Condition: IS ABOVE 100 (fire if container uses more than 100MB)
+   - Evaluation: every 1m, for 2m
+   - Add label: severity = warning
+   - Link to the "DevOps Team" contact point
+   - Save
+
+3. **Create a notification policy:**
+   - Go to Alerting > Notification policies
+   - Set the default contact point to "DevOps Team"
+   - Add a nested policy: match label `severity=critical` -> route to a different contact point (or the same one with different settings)
+
+4. **View alert state:**
+   - Go to Alerting > Alert rules
+   - You should see your rule in Normal, Pending, or Firing state
+
+**Document:** What is the difference between Prometheus alerts and Grafana alerts? When would you use each?
+
+---
+
+ Concept First:
+ 
+| | Prometheus Alerts | Grafana Alerts |
+|---|---|---|
+| Evaluates | PromQL only | PromQL + LogQL + other datasources |
+| Notifications | Needs Alertmanager | Built-in (email, Slack, PagerDuty) |
+| Setup | Config file | Web UI |
+| Best for | Infrastructure alerts | Business/app alerts |
+
+
+Grafana alerts are easier to set up with notifications. For complex routing, use Prometheus + Alertmanager.
+
+sent a sample notification but before that to work you must add the SMTP config in your docker file like this :
+
+<img width="996" height="567" alt="image" src="https://github.com/user-attachments/assets/56ebd488-df51-417a-aace-4d3bd4a974a5" />
+
+see that SMTP configs you must add then only it will work or else it wont.
+
+<img width="1912" height="908" alt="image" src="https://github.com/user-attachments/assets/bde7fe33-25c0-40ab-97cc-fb60b46c41c1" />
+
+checked:
+
+<img width="799" height="768" alt="image" src="https://github.com/user-attachments/assets/16e5dd10-a06a-4281-b767-090885697906" />
+
+<img width="1765" height="755" alt="image" src="https://github.com/user-attachments/assets/378101b9-80cf-4a6e-8b46-affa5393af85" />
+
+Fill in:
+
+Name: High Container Memory
+
+Section 1 — Query:
+
+Data source: Prometheus
+Query A:
+
+        promqlcontainer_memory_usage_bytes{name="notes-app"} / 1024 / 1024
+        
+Section 2 — Alert condition:
+
+        Condition: IS ABOVE 100 (fire if memory > 100MB)
+
+Section 3 — Evaluation:
+
+        Evaluate every: 1m
+        
+        For: 2m (must be above for 2 minutes before firing)
+
+Section 4 — Labels and notifications:
+
+        Add label: severity = warning
+        Contact point: DevOps Team
+
+Click Save rule and exit.
+
+<img width="1690" height="933" alt="image" src="https://github.com/user-attachments/assets/8f2f90a6-146a-464a-a124-d1bae309b0c2" />
+
+#### View alert state:
+
+Go to: Grafana → Alerting → Alert rules
+
+You'll see your "High Container Memory" rule. State should be Normal (green).
+
+If the container uses more than 100MB, it'll go to Pending, then Firing and send you an email.
+
+✅ Verify: Alert rule visible in Grafana with Normal state.
+
+<img width="1649" height="642" alt="image" src="https://github.com/user-attachments/assets/83dd22e6-676f-4eaf-acbe-8b6fb0f7267c" />
+
+---
+
+### Task 6: Review the Full Stack Architecture
+Your observability stack now covers all three pillars. Map out what you have built:
+
+```
+                    METRICS PIPELINE
+[Node Exporter] -----> [Prometheus] -----> [Grafana Dashboards]
+[cAdvisor] ----------> [Prometheus] -----> [Grafana Dashboards]
+[OTEL Collector:8889]> [Prometheus] -----> [Grafana Dashboards]
+                                    -----> [Alert Rules -> Notifications]
+
+                    LOGS PIPELINE
+[Docker Containers] -> [Promtail] -> [Loki] -> [Grafana Explore/Dashboards]
+
+                    TRACES PIPELINE
+[curl/App OTLP] -----> [OTEL Collector] -> [Debug Output / Future: Jaeger/Tempo]
+```
+
+**Services running:**
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| Prometheus | 9090 | Metrics storage and querying |
+| Node Exporter | 9100 | Host system metrics |
+| cAdvisor | 8080 | Container metrics |
+| Grafana | 3000 | Visualization and alerting |
+| Loki | 3100 | Log storage |
+| Promtail | 9080 | Log collection agent |
+| OTEL Collector | 4317/4318/8889 | Telemetry collection |
+| Notes App | 8000 | Sample application |
+
+Verify all services are running:
+```bash
+docker compose ps
+```
+
+All 8 containers should be healthy and running.
+
+---
+
+<img width="1897" height="396" alt="image" src="https://github.com/user-attachments/assets/b689b832-fd5e-436a-b1f4-36e5d3bc6307" />
+
+executed this command to fire alert:
+
+         docker exec -it notes-app python3 -c "a=['A'*1024*1024 for _ in range(150)]; input('Holding memory...')"
+         
+<img width="1624" height="849" alt="image" src="https://github.com/user-attachments/assets/13571188-cef9-4f92-97f9-3e0e66519624" />
+
+checked notification:
+
+<img width="731" height="792" alt="image" src="https://github.com/user-attachments/assets/6e000d41-68af-46b2-9530-a1d75b2e8a64" />
+
+<img width="711" height="824" alt="image" src="https://github.com/user-attachments/assets/34d17ee2-3935-4ff8-825c-d1dd5dadf0a0" />
+
+reverted my command to recover the alert firing:
+
+<img width="1499" height="913" alt="image" src="https://github.com/user-attachments/assets/5ac0a94c-1df5-46e7-a983-2ef184461f76" />
+
+---
+
+# Day 76 – OpenTelemetry and Alerting
+
+## The Three Pillars — Complete
+
+| Pillar | Answers | Tools |
+|---|---|---|
+| Metrics | WHAT broke and WHEN | Prometheus, Node Exporter, cAdvisor |
+| Logs | WHY it broke | Loki, Promtail |
+| Traces | WHERE it's slow | OTEL Collector |
+
+## OpenTelemetry Architecture
+                
+                ↓ port 4317 (gRPC) or 4318 (HTTP)
+                OTEL Collector
+                ├── Receivers: accept OTLP data
+                ├── Processors: batch (reduce overhead)
+                └── Exporters:
+                ├── Prometheus endpoint :8889 ← metrics
+                └── Debug console       ← traces and logs
+                Prometheus scrapes :8889
+                Grafana queries Prometheus
+
+
+## Full Stack Architecture
+
+METRICS:  Node Exporter → Prometheus → Grafana
+cAdvisor      → Prometheus → Grafana
+OTEL :8889    → Prometheus → Grafana
+→ Alert Rules
+LOGS:     Docker → Promtail → Loki → Grafana
+TRACES:   App/curl → OTEL Collector → Debug/Jaeger
+
+## Services Running
+
+| Service | Port | Purpose |
+|---|---|---|
+| Prometheus | 9090 | Metrics storage and querying |
+| Node Exporter | 9100 | Host system metrics |
+| cAdvisor | 8080 | Container metrics |
+| Grafana | 3000 | Visualization and alerting |
+| Loki | 3100 | Log storage |
+| Promtail | 9080 | Log collection agent |
+| OTEL Collector | 4317/4318/8889 | Telemetry collection |
+
+## Prometheus Alert States
+
+| State | Meaning |
+|---|---|
+| Inactive | Condition not true — all good |
+| Pending | Condition true but waiting for `for` duration |
+| Firing | Condition true longer than `for` — alert active |
+
+## Alert Rules Created
+
+| Alert | Condition | Severity |
+|---|---|---|
+| HighCPUUsage | CPU > 80% for 2m | warning |
+| HighMemoryUsage | RAM > 85% for 2m | warning |
+| ContainerDown | notes-app absent for 1m | critical |
+| TargetDown | any scrape target down for 1m | critical |
+| HighDiskUsage | disk > 90% for 5m | critical |
+
+## Prometheus Alerts vs Grafana Alerts
+
+| | Prometheus | Grafana |
+|---|---|---|
+| Notifications | Needs Alertmanager | Built-in |
+| Data sources | PromQL only | Multi-source |
+| Best for | Infrastructure | App/business metrics |
+
+## What is OTLP?
+OpenTelemetry Protocol — standard wire format for telemetry.
+gRPC on port 4317, HTTP on port 4318.
+Apps send one format, OTEL converts to any backend format.
+
+## What are Traces?
+A trace = one request's journey across multiple services.
+Each step = a span (has traceId, spanId, name, duration, attributes).
+Example: API Gateway → Auth Service → Database — 3 spans, 1 trace.
+
+###  Summary Table
+
+| Concept | What it means |
+|---|---|
+| OpenTelemetry (OTEL) | Vendor-neutral framework for collecting metrics, logs, traces |
+| OTEL Collector | Receives, processes, exports telemetry — not a backend |
+| OTLP | OpenTelemetry Protocol — standard format, gRPC:4317 HTTP:4318 |
+| Trace | Complete journey of one request across multiple services |
+| Span | One step in a trace — has ID, name, duration, attributes |
+| Receivers | OTEL pipeline stage: accept incoming data |
+| Processors | OTEL pipeline stage: transform data (batch, filter) |
+| Exporters | OTEL pipeline stage: send to backends |
+| `debug` exporter | Prints telemetry to console — use for learning |
+| `prometheus` exporter | Exposes metrics for Prometheus to scrape |
+| Alert: Inactive | Condition not true — everything fine |
+| Alert: Pending | Condition true, waiting for `for` duration |
+| Alert: Firing | Active alert — condition true longer than `for` |
+| `for: 2m` | Prevents flapping — brief spikes don't page you |
+| `absent()` | PromQL function — fires when a metric disappears |
+| Contact point | Where Grafana sends notifications (email, Slack) |
+| Notification policy | Rules for routing alerts to contact points |
