@@ -398,3 +398,199 @@ The error is:
 
     the chart-generated StatefulSet changed an immutable field
 
+<img width="1917" height="845" alt="image" src="https://github.com/user-attachments/assets/987d5d65-26ca-4363-b74d-00013d86759c" />
+
+Here executed different command since the mentioned fields are immutable and cannot be edited:
+
+<img width="1735" height="693" alt="image" src="https://github.com/user-attachments/assets/85b5fc69-2722-49f5-a7e2-e2a8dd54af4b" />
+
+<img width="1897" height="565" alt="image" src="https://github.com/user-attachments/assets/2d4dfc77-bd19-4d49-b028-92744dbc7b0a" />
+
+---
+
+### Task 6: Explore a Chart's Structure
+Before building your own chart for the AI-BankApp tomorrow, understand what is inside a Helm chart.
+
+Pull the MySQL chart locally:
+```bash
+helm pull bitnami/mysql --untar
+ls mysql/
+```
+
+You will see:
+```
+mysql/
+  Chart.yaml              # Chart metadata (name, version, description)
+  values.yaml             # Default configuration values
+  charts/                 # Subchart dependencies
+  templates/              # Kubernetes manifest templates
+    primary/
+      statefulset.yaml    # StatefulSet template with Go template syntax
+      svc.yaml            # Service template
+    _helpers.tpl          # Reusable template helpers
+    NOTES.txt             # Post-install message shown to the user
+    secrets.yaml          # Secret template
+```
+
+Open `templates/primary/statefulset.yaml` and look for Go template syntax:
+```yaml
+replicas: {{ .Values.primary.replicaCount }}
+image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+```
+
+`{{ .Values.primary.replicaCount }}` pulls from `values.yaml`. When you pass `--set primary.replicaCount=3`, it overrides this value.
+
+Open `Chart.yaml`:
+```yaml
+apiVersion: v2
+name: mysql
+description: A Helm chart for MySQL
+version: 12.2.1      # Chart version (chart structure changes)
+appVersion: "8.0.40"  # Version of MySQL inside the chart
+```
+
+**Now compare the Helm chart approach to the AI-BankApp's raw manifests:**
+
+| Aspect | AI-BankApp `k8s/mysql-deployment.yml` | Bitnami MySQL Helm Chart |
+|--------|---------------------------------------|--------------------------|
+| Secrets | Hardcoded base64 in `secrets.yml` | Generated and managed by Helm |
+| Storage | Manual StorageClass + PVC files | Configured via `persistence.size` value |
+| Replicas | Hardcoded in YAML | `primary.replicaCount` value |
+| Metrics | Not included | `metrics.enabled: true` |
+| Rollback | Manual | `helm rollback` |
+
+**Document:** What is the difference between `version` and `appVersion` in Chart.yaml?
+
+Clean up:
+```bash
+helm uninstall bankapp-mysql
+rm -rf mysql/
+```
+
+---
+
+Concept First:
+Tomorrow you'll BUILD a Helm chart for the AI-BankApp. Today you learn what's inside one by examining the MySQL chart
+
+cat mysql/Chart.yaml:
+
+<img width="1025" height="780" alt="image" src="https://github.com/user-attachments/assets/fc8aa49c-2adc-4f5e-8796-36642e548cf9" />
+
+| Field | Meaning | Changes when |
+|---|---|---|
+| `version` | Chart version | Chart templates or structure changes |
+| `appVersion` | App version inside | MySQL version is updated (8.0.40 → 8.0.41) |
+
+They're independent — you can update chart structure (version 12.2.1 → 12.2.2) without changing MySQL version.
+
+<img width="1576" height="828" alt="image" src="https://github.com/user-attachments/assets/7bd11ce1-b3b3-4999-ac2a-8dc31f6efaf2" />
+
+This is the magic of Helm:
+
+{{ .Values.primary.replicaCount }} → pulls from values.yaml
+{{ include "mysql.primary.fullname" . }} → calls a helper function from _helpers.tpl
+When you --set primary.replicaCount=3, it overrides the value here
+
+<img width="1208" height="624" alt="image" src="https://github.com/user-attachments/assets/02798c50-5bf0-4a22-a580-bf8dd6142e10" />
+
+These are reusable functions — like defining a function once and calling it in multiple templates.
+
+cat AI-bank-app/k8s/mysql-deployment.yaml:
+
+<img width="1017" height="1066" alt="image" src="https://github.com/user-attachments/assets/b5621371-6754-47c7-8455-6319ecf4a3f3" />
+
+Notice hardcoded values. Now you understand why Helm is better for this.
+
+<img width="879" height="135" alt="image" src="https://github.com/user-attachments/assets/360d85d0-7d6b-4173-9605-601daebd3b62" />
+
+---
+
+# Day 78 – Introduction to Helm and Chart Basics
+
+## What is Helm?
+Helm is the package manager for Kubernetes — like apt for Ubuntu.
+It packages Kubernetes manifests into reusable, versioned charts.
+One chart can serve dev, staging, and prod with different values files.
+
+## Four Core Concepts
+
+| Concept | What it means | Example |
+|---|---|---|
+| Chart | Package of K8s manifest templates | bitnami/mysql |
+| Release | One installed instance of a chart | bankapp-mysql |
+| Repository | Online collection of charts | charts.bitnami.com |
+| Values | Config that customizes the chart | rootPassword, database |
+
+## Raw YAML vs Helm for MySQL (AI-BankApp)
+
+| Aspect | Raw k8s/ manifests | Bitnami MySQL Chart |
+|---|---|---|
+| Files needed | mysql-deployment + secrets + pvc + pv + service | 1 helm install command |
+| Rollback | Manual git revert | helm rollback bankapp-mysql 1 |
+| Secrets | Hardcoded base64 | Generated by Helm |
+| Metrics | Not included | metrics.enabled: true |
+| Env config | Edit multiple files | Change values file |
+
+## Chart Directory Structure
+
+      mysql/
+         Chart.yaml        ← Chart metadata (name, version, appVersion)
+         values.yaml       ← Default configuration values
+         charts/           ← Subchart dependencies
+            templates/        ← K8s manifest templates with Go syntax
+               statefulset.yaml  ← {{ .Values.primary.replicaCount }}
+               secrets.yaml
+               _helpers.tpl    ← Reusable template functions
+               NOTES.txt       ← Post-install message
+
+## version vs appVersion in Chart.yaml
+
+| Field | Meaning | Example |
+|---|---|---|
+| `version` | Chart version (structure/templates) | 12.2.1 |
+| `appVersion` | Software version inside the chart | 8.0.40 (MySQL) |
+
+Independent — chart can update without MySQL version changing.
+
+## Helm Release Lifecycle
+
+| Command | What it does |
+|---|---|
+| `helm install` | Create a new release (revision 1) |
+| `helm upgrade` | Update a release (revision 2) |
+| `helm rollback release 1` | Revert to revision 1 (creates revision 3) |
+| `helm history release` | See all revisions |
+| `helm uninstall release` | Delete the release |
+| `helm upgrade --install` | Install if missing, upgrade if exists |
+
+## Why AI-BankApp's 12 Raw YAMLs Need Helm
+- 12 files with hardcoded values across Deployment, Service, ConfigMap,
+  Secret, PVC, PV, HPA, gateway, namespace
+- Changing image tag = edit multiple files
+- Different environments = copy and manually edit all 12 files
+- No built-in rollback
+- Helm converts all 12 into one chart with values files per environment
+
+### Summary Table
+
+| Concept | What it means |
+|---|---|
+| Chart | Package of K8s templates — like a .deb package |
+| Release | Named installed instance of a chart in your cluster |
+| Repository | Collection of charts online — bitnami, artifacthub |
+| Values | Config passed to chart — override defaults |
+| `helm install` | Create release from chart |
+| `helm upgrade` | Update existing release — creates new revision |
+| `helm rollback` | Revert to previous revision — creates new revision |
+| `helm history` | Full audit trail of all revisions |
+| `helm upgrade --install` | CI/CD friendly — install OR upgrade in one command |
+| `--set key=value` | Quick single override |
+| `-f values.yaml` | File-based overrides — preferred for production |
+| `helm show values` | See all configurable options for a chart |
+| `helm pull --untar` | Download chart locally without deploying |
+| `Chart.yaml version` | Chart structure version |
+| `Chart.yaml appVersion` | Software version inside the chart |
+| `{{ .Values.key }}` | Go template syntax — pulls value from values.yaml |
+| `_helpers.tpl` | Reusable template helper functions |
+| `NOTES.txt` | Post-install message shown after helm install |
+
