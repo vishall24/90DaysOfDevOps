@@ -1320,4 +1320,75 @@ port-forward:
 
 <img width="837" height="49" alt="image" src="https://github.com/user-attachments/assets/11a2e266-d3dd-4a6d-a976-f657d4e0d037" />
 
+<img width="1440" height="858" alt="image" src="https://github.com/user-attachments/assets/33cf1104-c446-4d15-a269-58cdfaad1651" />
+
+---
+
+## What We Did
+Converted 12 raw Kubernetes YAML files into one Helm chart.
+Entire stack deployable with one command.
+
+## Template Files Created
+
+| Template | Replaces raw file | Key feature |
+|---|---|---|
+| configmap.yaml | k8s/configmap.yml | Dynamic service names via include |
+| secrets.yaml | k8s/secrets.yml | b64enc auto-encodes passwords |
+| storage.yaml | k8s/pv.yml + pvc.yml | Conditional per mysql/ollama.enabled |
+| bankapp-deployment.yaml | k8s/bankapp-deployment.yml | Conditional init containers |
+| mysql-deployment.yaml | k8s/mysql-deployment.yml | Wrapped in {{- if mysql.enabled }} |
+| ollama-deployment.yaml | k8s/ollama-deployment.yml | Model name from values |
+| services.yaml | k8s/service.yml | Conditional Ollama/MySQL services |
+| hpa.yaml | k8s/hpa.yml | Conditional on autoscaling.enabled |
+
+## Go Template Cheat Sheet
+
+| Syntax | What it does |
+|---|---|
+| `{{ .Values.key }}` | Pull value from values.yaml |
+| `{{ include "func" . }}` | Call helper function |
+| `{{- if .Values.enabled }}` | Conditional block |
+| `{{ toYaml . \| nindent 12 }}` | Render YAML block with indent |
+| `{{ .b64enc \| quote }}` | Base64 encode + quote |
+| `{{ .Release.Namespace }}` | Current release namespace |
+| `{{ default "fallback" .Values.x }}` | Fallback value if empty |
+| `{{- with .Values.resources }}` | Scoped block |
+
+## Power of ollama.enabled=false
+Setting ollama.enabled=false removes:
+- Ollama Deployment
+- Ollama Service
+- Ollama PVC
+- wait-for-ollama init container from BankApp
+
+One boolean controls an entire component stack.
+
+## Raw YAML vs Helm Comparison
+
+| Aspect | Raw k8s/ files | Helm chart |
+|---|---|---|
+| Secrets | Hardcoded base64 | b64enc auto-encodes |
+| Service names | Hardcoded strings | include "bankapp.fullname" |
+| Rollback | Manual | helm rollback |
+| Component toggle | Delete files | Set enabled=false |
+| Image tag change | Edit deployment.yml | --set bankapp.image.tag=v2 |
+
+### Summary Table
+
+| Concept | What it means |
+|---|---|
+| `helm create bankapp` | Scaffold a new chart directory |
+| `rm -rf templates/*.yaml` | Clean slate — write your own templates |
+| `{{ .Values.key }}` | Pull from values.yaml |
+| `{{ include "bankapp.fullname" . }}` | Call helper — returns release-name-chart |
+| `{{- if .Values.x.enabled }}` | Conditional — entire resource block skipped if false |
+| `b64enc` | Helm function — auto base64 encodes strings |
+| `toYaml . \| nindent 12` | Renders nested YAML with correct indentation |
+| `{{- if not .Values.autoscaling.enabled }}` | Omit replicas when HPA is managing count |
+| `helm lint bankapp/` | Validate chart structure |
+| `helm template my-bankapp bankapp/` | Render YAML locally without deploying |
+| `--dry-run --debug` | Simulate against cluster |
+| `--set storageClass.create=false` | Override for Kind (not AWS) |
+| `NOTES.txt` | Post-install message shown after helm install |
+| `_helpers.tpl` | Reusable template functions like bankapp.fullname |
 
