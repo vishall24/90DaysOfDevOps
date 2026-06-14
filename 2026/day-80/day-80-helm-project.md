@@ -228,3 +228,148 @@ Concept First:
 | Gateway | off | off | on |
 | HPA | disabled | enabled | enabled |
 
+
+vim values-dev.yaml:
+
+<img width="660" height="818" alt="image" src="https://github.com/user-attachments/assets/1474f4f3-3c32-4aaf-af5a-406b8fcc1ce1" />
+
+vim values-staging.yaml:
+
+<img width="603" height="845" alt="image" src="https://github.com/user-attachments/assets/40ae80c2-15ca-46fb-a51e-9e23163b9d16" />
+
+vim values-prod.yaml:
+
+<img width="469" height="881" alt="image" src="https://github.com/user-attachments/assets/c49c609d-3bd4-41d3-83bd-82f856e8c1ed" />
+
+Deployed using helm only for dev:
+
+<img width="1124" height="456" alt="image" src="https://github.com/user-attachments/assets/ec24498b-1d3c-4ee7-b95e-eafc27764a65" />
+
+checking resources:
+
+<img width="1341" height="470" alt="image" src="https://github.com/user-attachments/assets/94bc8b90-d37f-40c0-8a85-0d92b5135633" />
+
+rendering template:
+
+<img width="656" height="134" alt="image" src="https://github.com/user-attachments/assets/8f60646a-7056-4727-a917-e7ea64521827" />
+
+<img width="692" height="109" alt="image" src="https://github.com/user-attachments/assets/b61f76f2-30cd-420b-9990-018f72a1ba75" />
+
+<img width="859" height="191" alt="image" src="https://github.com/user-attachments/assets/d682b4bf-c4f0-4461-b5ae-9898223ef634" />
+
+Dev shows replicas: 1 in the Deployment. Staging shows NO replicas in Deployment (HPA manages it) but shows minReplicas: 2 in HPA. ✅
+
+---
+
+### Task 2: Add Helm Hooks
+The AI-BankApp uses init containers to wait for MySQL. Helm hooks offer another approach -- running pre-install jobs.
+
+Create `bankapp/templates/pre-install-job.yaml`:
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "bankapp.fullname" . }}-db-ready
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "bankapp.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    spec:
+      containers:
+        - name: db-check
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Waiting for MySQL to be ready..."
+              until nc -z {{ include "bankapp.fullname" . }}-mysql 3306; do
+                echo "MySQL not ready, retrying in 3s..."
+                sleep 3
+              done
+              echo "MySQL is ready!"
+          resources:
+            requests: { memory: "32Mi", cpu: "50m" }
+            limits: { memory: "64Mi", cpu: "100m" }
+      restartPolicy: Never
+  backoffLimit: 10
+```
+
+**How hooks work in the AI-BankApp context:**
+- `helm.sh/hook: pre-install,pre-upgrade` -- runs before install and before upgrade
+- This ensures MySQL is up before the BankApp Deployment is created
+- `before-hook-creation` -- deletes the old job before creating a new one on re-runs
+- Combined with init containers in the Deployment, this provides defense-in-depth
+
+**Other useful hook types:**
+- `post-install` -- run database migrations after deploy
+- `pre-delete` -- backup database before teardown
+- `test` -- runs when you execute `helm test`
+
+**Add a Helm test:**
+
+Create `bankapp/templates/tests/test-connection.yaml`:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "bankapp.fullname" . }}-test
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "bankapp.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: test
+      image: busybox:1.36
+      command: ['sh', '-c', 'wget -qO- http://{{ include "bankapp.fullname" . }}-service:8080/actuator/health']
+  restartPolicy: Never
+```
+
+After deploying, run:
+```bash
+helm test bankapp-dev -n dev
+```
+
+This hits the Spring Boot health endpoint and confirms the app is running.
+
+---
+
+Concept First:
+
+What are Helm hooks?
+Regular Kubernetes resources in your chart deploy at install time. Hooks run at specific points in the lifecycle:
+
+| Hook | When it runs | Use case |
+|---|---|---|
+| pre-install | Before any resources created | Check dependencies ready |
+| post-install | After all resources created | Run DB migrations |
+| pre-upgrade | Before upgrade | Backup database |
+| post-upgrade | After upgrade | Notify team |
+| pre-delete | Before uninstall | Cleanup jobs |
+| test | When helm test runs | Health checks |
+
+How it's different from init containers:
+
+Init containers run inside pods at start time
+Hooks run as separate Kubernetes Jobs before/after the whole release
+
+Defense in depth for AI-BankApp:
+
+pre-install hook (Job) → checks MySQL is ready
+   ↓
+BankApp Deployment created with init containers
+   ↓
+Init containers also wait for MySQL
+Two layers of MySQL readiness checks = very reliable startup.
+
+vim templates/pre-install-job.yaml:
+
+<img width="693" height="681" alt="image" src="https://github.com/user-attachments/assets/23b9fdf5-ce3f-45a3-ab77-be82787015d1" />
+
