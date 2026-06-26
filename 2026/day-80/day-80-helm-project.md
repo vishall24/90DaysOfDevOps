@@ -373,3 +373,83 @@ vim templates/pre-install-job.yaml:
 
 <img width="693" height="681" alt="image" src="https://github.com/user-attachments/assets/23b9fdf5-ce3f-45a3-ab77-be82787015d1" />
 
+vim bankapp/templates/tests/test-connection.yaml:
+
+<img width="1059" height="479" alt="image" src="https://github.com/user-attachments/assets/42f8f940-41a8-46d2-96a5-550d8278cb07" />
+
+<img width="970" height="531" alt="image" src="https://github.com/user-attachments/assets/1ca7a521-b5a9-4e39-a1d1-75a3fdb1ca7a" />
+
+<img width="1200" height="489" alt="image" src="https://github.com/user-attachments/assets/7903a792-a1ab-45ee-a2e6-38d551850e7e" />
+
+<img width="756" height="580" alt="image" src="https://github.com/user-attachments/assets/51294bab-93fe-482a-aa61-f7472a2681b9" />
+
+---
+
+### Task 3: Package and Version the Chart
+Package the chart into a distributable `.tgz` file:
+
+```bash
+# Lint first
+helm lint bankapp/
+
+# Package
+helm package bankapp/
+```
+
+This creates `bankapp-0.1.0.tgz`.
+
+**Bump the version after changes:**
+Edit `bankapp/Chart.yaml`:
+```yaml
+version: 0.2.0        # Chart structure changed (added hooks)
+appVersion: "1.1.0"    # App version updated
+```
+
+Re-package:
+```bash
+helm package bankapp/
+```
+
+Now you have `bankapp-0.1.0.tgz` and `bankapp-0.2.0.tgz`.
+
+**Install from a package:**
+```bash
+helm install my-bankapp bankapp-0.2.0.tgz -f bankapp/values-dev.yaml -n bankapp --create-namespace
+```
+
+**Create a chart repository index** (for sharing via GitHub Pages):
+```bash
+mkdir chart-repo
+cp bankapp-*.tgz chart-repo/
+helm repo index chart-repo/ --url https://your-username.github.io/helm-charts
+cat chart-repo/index.yaml
+```
+
+---
+
+Concept first:
+
+| Version | Changes | Use case |
+|---|---|---|
+| 0.1.0 | Initial chart | First release |
+| 0.2.0 | Added hooks, test pod | Chart structure changed |
+| 0.2.1 | Bug fixes | Patch release |
+
+Packaging creates a .tgz file you can share with teams, push to GitHub Pages, or store in a chart museum.
+
+<img width="967" height="162" alt="image" src="https://github.com/user-attachments/assets/54ef8241-32a5-49f9-9dce-5c29750ca3fb" />
+
+<img width="906" height="566" alt="image" src="https://github.com/user-attachments/assets/933745a5-19cc-408c-8dc9-65cee1011e73" />
+
+vim bankapp/Chart.yaml:
+
+<img width="765" height="279" alt="image" src="https://github.com/user-attachments/assets/4c7f0d8c-6bb9-44e7-bb52-7787067b032b" />
+
+helm package bankapp/
+ls *.tgz
+
+Output:
+
+         bankapp-0.1.0.tgz
+         bankapp-0.2.0.tgz
+
