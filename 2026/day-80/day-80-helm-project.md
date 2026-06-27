@@ -443,7 +443,7 @@ Packaging creates a .tgz file you can share with teams, push to GitHub Pages, or
 
 vim bankapp/Chart.yaml:
 
-<img width="765" height="279" alt="image" src="https://github.com/user-attachments/assets/4c7f0d8c-6bb9-44e7-bb52-7787067b032b" />
+a<img width="777" height="297" alt="image" src="https://github.com/user-attachments/assets/9ab78bf3-eb98-4c64-96db-f79a68b2386b" />
 
 helm package bankapp/
 ls *.tgz
@@ -452,4 +452,348 @@ Output:
 
          bankapp-0.1.0.tgz
          bankapp-0.2.0.tgz
+
+---
+
+         mkdir chart-repo
+         cp bankapp-*.tgz chart-repo/
+         
+         helm repo index chart-repo/ \
+                    --url https://vishall24.github.io/helm-charts
+                    
+cat chart-repo/index.yaml:
+
+<img width="610" height="677" alt="image" src="https://github.com/user-attachments/assets/2475174b-8fa8-4eeb-9194-477f530b0a04" />
+
+Output shows both chart versions listed. This index.yaml + .tgz files is all you need for a Helm repository hosted on GitHub Pages.
+
+---
+
+### Task 4: Understand Helm in the AI-BankApp GitOps Pipeline
+The AI-BankApp uses a GitOps pipeline. Study how Helm could integrate:
+
+**Current pipeline (from `.github/workflows/gitops-ci.yml`):**
+```
+Developer pushes code
+  -> GitHub Actions builds Docker image
+  -> Tags with git commit SHA
+  -> Updates image tag in k8s/bankapp-deployment.yml via sed
+  -> Commits the change back to the repo
+  -> ArgoCD detects the change and syncs to EKS
+```
+
+**With Helm, the pipeline becomes:**
+```
+Developer pushes code
+  -> GitHub Actions builds Docker image
+  -> Tags with git commit SHA
+  -> Updates image.tag in helm-chart/values.yaml (or values-prod.yaml)
+  -> Commits the change back to the repo
+  -> ArgoCD detects the change and runs helm upgrade on EKS
+```
+
+Here is how the CI step would look with Helm (reference pattern):
+```yaml
+# In the GitHub Actions workflow
+- name: Update Helm values with new image tag
+  run: |
+    TAG=${{ steps.tag.outputs.sha_short }}
+    yq -i '.bankapp.image.tag = "'$TAG'"' helm-chart/bankapp/values-prod.yaml
+
+- name: Commit updated Helm values
+  run: |
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git add helm-chart/bankapp/values-prod.yaml
+    git diff --staged --quiet || git commit -m "ci: update bankapp image to $TAG [skip ci]"
+    git push
+```
+
+**ArgoCD with Helm** (the ArgoCD Application would change from):
+```yaml
+# Current: raw manifests
+source:
+  path: k8s
+```
+
+To:
+```yaml
+# With Helm
+source:
+  path: helm-chart/bankapp
+  helm:
+    valueFiles:
+      - values-prod.yaml
+```
+
+ArgoCD natively supports Helm charts -- it renders templates and applies the result, tracking drift against the rendered output.
+
+**Document:** What are the advantages of ArgoCD syncing a Helm chart vs raw manifests?
+
+---
+
+Concept First:
+
+Current AI-BankApp pipeline:
+
+         Code push
+           → Build Docker image (tag with git SHA)
+           → Update k8s/bankapp-deployment.yml with sed
+           → Commit back to repo
+           → ArgoCD sees changed manifest → applies to EKS
+
+With Helm:
+
+         Code push
+           → Build Docker image (tag with git SHA)
+           → Update helm-chart/bankapp/values-prod.yaml (bankapp.image.tag)
+           → Commit back to repo
+           → ArgoCD sees changed values → runs helm upgrade on EKS
+
+With diagram:
+
+         Developer
+              │
+              │ git push
+              ▼
+         GitHub Actions
+              │
+              ├── Login to DockerHub
+              │
+              ├── Build Docker Image
+              │
+              ├── Push Image
+              │
+              ├── Update deployment.yaml
+              │        latest
+              │          │
+              │          ▼
+              │      1a2b3c4
+              │
+              ├── Commit
+              │
+              └── Push to GitHub
+                        │
+                        ▼
+                   Git Repository
+                        │
+                        ▼
+                    Argo CD
+                        │
+                        ▼
+                 Kubernetes Cluster
+                        │
+                        ▼
+                  New Pods Created
+         
+
+### Helm vs raw manifests with ArgoCD:
+
+| | Raw manifests | Helm with ArgoCD |
+|---|---|---|
+| Image tag update | sed string replace | yq YAML-aware update |
+| Environment differences | Separate file copies | One chart, different values |
+| Rollback | Manual git revert | helm rollback or ArgoCD sync |
+| Drift detection | Exact manifest comparison | Rendered template comparison |
+| Dependencies | Manual | helm dependencies |
+
+---
+
+### Task 5: Helm Best Practices for Production
+Review these patterns used in production AI-BankApp deployments:
+
+**1. Always use `helm upgrade --install`:**
+```bash
+helm upgrade --install bankapp bankapp/ \
+  -f bankapp/values-prod.yaml \
+  --set bankapp.image.tag=$GIT_SHA \
+  -n bankapp --create-namespace \
+  --wait --timeout 300s \
+  --atomic
+```
+
+- `--install` -- creates if missing, upgrades if exists
+- `--set bankapp.image.tag=$GIT_SHA` -- pins to exact git commit
+- `--wait` -- waits for all pods to be ready
+- `--atomic` -- rolls back automatically if the upgrade fails
+
+**2. Use `helm diff` before upgrading:**
+```bash
+helm plugin install https://github.com/databus23/helm-diff
+helm diff upgrade bankapp bankapp/ -f bankapp/values-prod.yaml
+```
+
+Shows exactly what would change before you commit to the upgrade.
+
+**3. Resource quotas per namespace:**
+```yaml
+# Add to templates/resourcequota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "bankapp.fullname" . }}-quota
+  namespace: {{ .Release.Namespace }}
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+```
+
+**4. Never store real secrets in values.yaml.** In production, use:
+- External Secrets Operator with AWS Secrets Manager
+- Sealed Secrets
+- Vault by HashiCorp
+
+The `values.yaml` defaults are fine for local dev but should be overridden in CI/CD via `--set` with pipeline secrets.
+
+---
+
+what production team does:
+
+| Method | How it works | Complexity |
+|---|---|---|
+| --set in CI/CD | `--set secrets.mysqlPassword=$SECRET` | Simple |
+| External Secrets Operator | Reads from AWS Secrets Manager | Medium |
+| Sealed Secrets | Encrypted secrets committed to Git | Medium |
+| HashiCorp Vault | Full secrets management platform | Complex |
+
+For now, --set in CI/CD is fine. The key rule: never commit real production passwords to Git.
+
+---
+
+### Task 6: Clean Up and Review
+Check what you have deployed:
+```bash
+helm list -A
+```
+
+**Reflect and document the 3-day Helm journey:**
+
+| Day | Concept | AI-BankApp Connection |
+|-----|---------|----------------------|
+| 78 | Helm install, repos, values, upgrade, rollback | Deployed MySQL for the BankApp via Bitnami chart |
+| 79 | Custom chart from scratch, Go templates | Converted 12 raw `k8s/` manifests into a Helm chart |
+| 80 | Multi-env values, hooks, packaging, CI/CD | Production-ready chart with dev/staging/prod configs |
+
+**When would you use Helm vs raw manifests vs Kustomize?**
+
+| Approach | Best For | AI-BankApp Example |
+|----------|---------|-------------------|
+| Raw manifests | Simple, single-env deployments | The current `k8s/` directory |
+| Helm | Multi-env, complex apps with dependencies | The chart you built (3 services, HPA, hooks) |
+| Kustomize | Overlays on existing manifests, no templating | Good if you want to patch `k8s/` without rewriting |
+
+**Clean up:**
+```bash
+helm uninstall bankapp-dev -n dev
+kubectl delete namespace dev
+kind delete cluster --name tws-cluster
+```
+
+---
+
+<img width="1110" height="64" alt="image" src="https://github.com/user-attachments/assets/3da0aab6-1b12-4590-adfc-9c208f2ec426" />
+
+<img width="757" height="132" alt="image" src="https://github.com/user-attachments/assets/9d6d5ebc-779d-440d-a183-db2be9541f29" />
+
+3-day Helm journey:
+
+| Day | What you built |
+|---|---|
+| 78 | Helm basics, deployed MySQL from Bitnami community chart, upgrade/rollback/history |
+| 79 | Built custom chart from scratch, 12 YAML → 8 templates, conditional components |
+| 80 | Multi-env values, hooks, packaging, CI/CD integration |
+
+---
+
+## Environment Comparison
+
+| Setting | Dev | Staging | Prod |
+|---|---|---|---|
+| BankApp replicas | 1 (fixed) | 2-3 (HPA) | 2-4 (HPA) |
+| Image tag | latest | v1.2.0 | v1.2.0 |
+| MySQL storage | 2Gi | 5Gi | 20Gi |
+| StorageClass | standard (Kind) | gp3 (AWS) | gp3 (AWS) |
+| Ollama memory limit | 1.5Gi | 2Gi | 2.5Gi |
+| HPA | disabled | enabled (75%) | enabled (70%) |
+| Gateway | off | off | on |
+
+## Helm Hooks Explained
+
+| Annotation | What it does |
+|---|---|
+| `helm.sh/hook: pre-install` | Runs before any resources created |
+| `helm.sh/hook: pre-upgrade` | Runs before every upgrade |
+| `helm.sh/hook-weight: "0"` | Order when multiple hooks exist |
+| `helm.sh/hook-delete-policy: before-hook-creation` | Clean up old job before new run |
+| `helm.sh/hook: test` | Only runs when helm test is called |
+
+## Chart Versions
+
+| Version | Changes |
+|---|---|
+| 0.1.0 | Initial chart — 8 templates, 3 deployments |
+| 0.2.0 | Added pre-install hook and test pod |
+
+## CI/CD Integration
+
+GitOps flow with Helm:
+1. Code pushed → GitHub Actions builds image with git SHA tag
+2. yq updates bankapp.image.tag in values-prod.yaml
+3. Commit pushed back to repo
+4. ArgoCD detects change → runs helm upgrade on EKS
+
+ArgoCD Application change:
+- Before: source.path = k8s (raw manifests)
+- After: source.path = helm-chart/bankapp + helm.valueFiles = [values-prod.yaml]
+
+## Production Helm Command
+
+```bash
+helm upgrade --install bankapp bankapp/ \
+  -f bankapp/values-prod.yaml \
+  --set bankapp.image.tag=$GIT_SHA \
+  -n bankapp --create-namespace \
+  --wait --timeout 300s \
+  --atomic
+```
+
+--atomic is critical: auto-rollbacks if upgrade fails.
+
+## Helm vs Raw Manifests vs Kustomize
+
+| Approach | Best for | AI-BankApp example |
+|---|---|---|
+| Raw manifests | Simple single-env | Current k8s/ directory |
+| Helm | Multi-env, complex apps | Chart with dev/staging/prod |
+| Kustomize | Overlays on existing YAML | Patching k8s/ without rewriting |
+
+## Production Secrets — Never in values.yaml
+- --set secrets.password=$CI_SECRET (simplest)
+- External Secrets Operator with AWS Secrets Manager
+- Sealed Secrets (encrypted, safe to commit)
+- HashiCorp Vault (full secrets platform)
+
+---
+
+## Summary Table:
+
+| Concept | What it means |
+|---|---|
+| values-dev.yaml | Dev config: minimal resources, standard StorageClass for Kind |
+| values-staging.yaml | Staging config: HPA on, gp3 storage, staging passwords |
+| values-prod.yaml | Prod config: max resources, gateway on, prod passwords |
+| `storageClass: standard` | Kind's default StorageClass — use instead of gp3 on Kind |
+| `storageClass.create: false` | Don't create gp3 on Kind — it doesn't have AWS EBS |
+| Helm hook | Job that runs at specific lifecycle points (pre-install, post-install) |
+| `helm.sh/hook` annotation | What makes a template a hook instead of a regular resource |
+| `--atomic` | Auto-rollback if upgrade fails — critical for CI/CD |
+| `--wait` | Wait for all pods Ready before returning |
+| `helm diff` plugin | Preview exactly what will change before upgrading |
+| `helm package` | Creates distributable .tgz file |
+| `helm repo index` | Creates index.yaml for hosting as a chart repository |
+| `yq` | YAML-aware tool for updating values in CI (better than sed) |
+| Multiple `-f` flags | Later files override earlier ones — base + env pattern |
 
