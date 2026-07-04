@@ -485,6 +485,9 @@ What is nip.io? A free wildcard DNS service. 1.2.3.4.nip.io always resolves to 1
 
 BankApp login page over HTTPS with a valid cert!
 
+<img width="1440" height="788" alt="image" src="https://github.com/user-attachments/assets/54211574-ce36-4be8-a1ee-f350d057daba" />
+
+
 ---
 
 ### Task 5: Understand EBS Persistent Storage in Action
